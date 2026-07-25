@@ -1,0 +1,9 @@
+node_modules
+npm-debug.log
+antigravity.db
+antigravity.db-journal
+*.db
+.git
+.gitignore
+.env
+.env.local
