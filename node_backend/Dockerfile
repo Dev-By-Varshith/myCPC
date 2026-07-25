@@ -1,28 +1,13 @@
-# --- Build Stage ---
-FROM node:20-slim AS builder
+FROM node:20
 WORKDIR /app
 
-# Install build dependencies for better-sqlite3 compilation
-RUN apt-get update && apt-get install -y \
-    python3 \
-    make \
-    g++ \
-    && rm -rf /var/lib/apt/lists/*
-
+# Copy package configuration
 COPY package*.json ./
-RUN npm ci --omit=dev
 
-# --- Final Production Stage ---
-FROM node:20-slim
-WORKDIR /app
+# Install dependencies (better-sqlite3 compiles automatically using pre-installed tools in full node:20 image)
+RUN npm install --omit=dev
 
-# Install sqlite3 runtime dependency
-RUN apt-get update && apt-get install -y \
-    sqlite3 \
-    && rm -rf /var/lib/apt/lists/*
-
-# Copy built node_modules and code
-COPY --from=builder /app/node_modules ./node_modules
+# Copy the rest of the application files
 COPY . .
 
 # Expose port and configure environment
