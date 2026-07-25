@@ -4,6 +4,7 @@
   "description": "Root configuration for taking CP_WEB online",
   "main": "node_backend/server.js",
   "scripts": {
+    "postinstall": "cd node_backend && npm install",
     "build": "cd node_backend && npm install",
     "start": "cd node_backend && npm start"
   },
