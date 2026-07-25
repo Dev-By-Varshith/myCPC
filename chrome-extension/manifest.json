@@ -1,0 +1,108 @@
+{
+  "manifest_version": 3,
+  "name": "myCPC — CP Companion V2",
+  "version": "1.0.0",
+  "description": "The smartest competitive programming assistant. Parses problems, sends to VS Code, shows your personal difficulty & solve-time predictions, and coaches you through live contests.",
+  "author": "myCPC Team",
+
+  "permissions": [
+    "storage",
+    "tabs",
+    "activeTab",
+    "scripting",
+    "sidePanel",
+    "alarms",
+    "notifications"
+  ],
+
+  "host_permissions": [
+    "https://codeforces.com/*",
+    "https://atcoder.jp/*",
+    "https://cses.fi/*",
+    "https://www.codechef.com/*",
+    "https://leetcode.com/*",
+    "https://www.hackerrank.com/*",
+    "https://open.kattis.com/*",
+    "https://judge.yosupo.jp/*",
+    "http://localhost:3002/*",
+    "http://localhost:10043/*"
+  ],
+
+  "background": {
+    "service_worker": "background.js",
+    "type": "module"
+  },
+
+  "content_scripts": [
+    {
+      "matches": [
+        "https://codeforces.com/contest/*/problem/*",
+        "https://codeforces.com/problemset/problem/*/*",
+        "https://codeforces.com/gym/*/problem/*",
+        "https://codeforces.com/contest/*"
+      ],
+      "js": ["config.js", "content/codeforces.js"],
+      "run_at": "document_idle"
+    },
+    {
+      "matches": ["https://atcoder.jp/contests/*/tasks/*"],
+      "js": ["config.js", "content/atcoder.js"],
+      "run_at": "document_idle"
+    },
+    {
+      "matches": ["https://cses.fi/problemset/task/*"],
+      "js": ["config.js", "content/cses.js"],
+      "run_at": "document_idle"
+    },
+    {
+      "matches": ["https://www.codechef.com/problems/*", "https://www.codechef.com/*/problems/*"],
+      "js": ["config.js", "content/codechef.js"],
+      "run_at": "document_idle"
+    },
+    {
+      "matches": ["https://open.kattis.com/problems/*"],
+      "js": ["config.js", "content/kattis.js"],
+      "run_at": "document_idle"
+    },
+    {
+      "matches": [
+        "https://codeforces.com/blog/entry/*",
+        "https://codeforces.com/contest/*/submission/*",
+        "https://codeforces.com/contest/*/standings*",
+        "https://codeforces.com/contest/*/problem/*",
+        "https://codeforces.com/problemset/problem/*/*"
+      ],
+      "js": ["config.js", "content/passive.js"],
+      "run_at": "document_idle"
+    }
+  ],
+
+  "action": {
+    "default_popup": "popup/popup.html",
+    "default_title": "myCPC — CP Companion V2",
+    "default_icon": {
+      "16":  "icons/icon16.png",
+      "32":  "icons/icon32.png",
+      "48":  "icons/icon48.png",
+      "128": "icons/icon128.png"
+    }
+  },
+
+  "side_panel": {
+    "default_path": "sidebar/sidebar.html"
+  },
+
+  "icons": {
+    "16":  "icons/icon16.png",
+    "32":  "icons/icon32.png",
+    "48":  "icons/icon48.png",
+    "128": "icons/icon128.png"
+  },
+
+  "web_accessible_resources": [
+    {
+      "resources": ["sidebar/*", "icons/*", "content/*"],
+      "matches": ["<all_urls>"]
+    }
+  ]
+}

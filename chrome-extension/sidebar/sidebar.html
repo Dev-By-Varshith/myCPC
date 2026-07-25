@@ -1,0 +1,119 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>myCPC — Problem Intelligence</title>
+<link rel="stylesheet" href="sidebar.css">
+</head>
+<body>
+
+<!-- Header -->
+<div class="header">
+  <div class="logo">🧬</div>
+  <div class="brand">
+    <div class="brand-name">myCPC Intelligence</div>
+    <div class="brand-sub" id="problem-group">Problem Intelligence Layer</div>
+  </div>
+  <div class="status-dot" id="statusDot" title="Backend connection"></div>
+</div>
+
+<!-- No Problem State -->
+<div id="no-problem" class="empty-state">
+  <div class="empty-icon">📋</div>
+  <div class="empty-text">Navigate to a problem page to see your personalized intelligence.</div>
+  <div class="empty-sub">Works on Codeforces, AtCoder, CSES, and CodeChef.</div>
+</div>
+
+<!-- Problem Intelligence Panel -->
+<div id="intel-panel" style="display:none">
+
+  <!-- Problem Header -->
+  <div class="problem-header" id="problem-header">
+    <div class="problem-name" id="problem-name">Loading...</div>
+    <div class="problem-meta" id="problem-meta"></div>
+  </div>
+
+  <!-- Intelligence Cards -->
+  <div class="section-label">🎯 Your Intel</div>
+  <div class="intel-grid">
+    <div class="intel-card">
+      <div class="intel-val" id="cf-diff" style="color:#fbbf24">—</div>
+      <div class="intel-lbl">CF Rating</div>
+    </div>
+    <div class="intel-card">
+      <div class="intel-val" id="your-diff" style="color:#a78bfa">—</div>
+      <div class="intel-lbl">For You</div>
+    </div>
+    <div class="intel-card">
+      <div class="intel-val" id="pred-time" style="color:#5ecfff">—</div>
+      <div class="intel-lbl">Est. Time</div>
+    </div>
+  </div>
+
+  <!-- GM Benchmark -->
+  <div class="gm-bench" id="gm-bench" style="display:none">
+    <span class="gm-icon">🏆</span>
+    <span id="gm-text">GM benchmarks this in ~?m</span>
+  </div>
+
+  <!-- Tag Advisor -->
+  <div class="section-label" style="display:flex;align-items:center;justify-content:space-between">
+    <span>🏷 Tag Advisor</span>
+    <div class="tag-toggle" id="tagToggle">
+      <button class="tag-btn active" data-mode="hide" id="tagHideBtn">Hide</button>
+      <button class="tag-btn" data-mode="hint" id="tagHintBtn">Hint</button>
+      <button class="tag-btn" data-mode="show" id="tagShowBtn">Show</button>
+    </div>
+  </div>
+  <div id="tag-area" class="tag-area">
+    <div class="tag-hidden-msg" id="tag-hidden-msg">Tags hidden. Use "Hint" for 1 tag or "Show" to reveal all.</div>
+    <div class="tags" id="tags-container" style="display:none"></div>
+  </div>
+
+  <!-- Divider -->
+  <div class="div"></div>
+
+  <!-- Similar Problems You've Solved -->
+  <div id="similar-section" style="display:none">
+    <div class="section-label">✅ Similar You've Solved</div>
+    <div id="similar-list" class="prob-list"></div>
+    <div class="div"></div>
+  </div>
+
+  <!-- Fill Your Gap -->
+  <div id="fillgap-section" style="display:none">
+    <div class="section-label">📈 Fill Your Gap</div>
+    <div id="fillgap-list" class="prob-list"></div>
+    <div class="div"></div>
+  </div>
+
+  <!-- Send to VS Code -->
+  <div class="send-section">
+    <button class="send-btn" id="sendBtn">
+      <span id="send-icon">▶</span> Send to VS Code
+    </button>
+    <div class="vscode-status" id="vscode-status"></div>
+  </div>
+
+</div>
+
+<!-- Contest Sidekick Panel (injected when in live contest) -->
+<div id="contest-panel" style="display:none">
+  <div class="div"></div>
+  <div class="section-label">🏆 Contest Coach</div>
+  <div class="contest-timer" id="contest-timer">--:--:--</div>
+  <div id="contest-problems" class="contest-prob-list"></div>
+  <div id="skip-advice" class="skip-advice" style="display:none"></div>
+</div>
+
+<!-- DNA Score Bar (at bottom) -->
+<div class="dna-bar" id="dna-bar" style="display:none">
+  <div class="dna-bar-title">Your DNA Scores</div>
+  <div class="dna-scores" id="dna-scores"></div>
+</div>
+
+<script src="../config.js"></script>
+<script src="sidebar.js"></script>
+</body>
+</html>

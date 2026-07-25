@@ -2,11 +2,11 @@
   "name": "cp-web-root",
   "version": "1.0.0",
   "description": "Root configuration for taking CP_WEB online",
-  "main": "node_backend/server.js",
+  "main": "backend/server.js",
   "scripts": {
-    "postinstall": "cd node_backend && npm install",
-    "build": "cd node_backend && npm install",
-    "start": "cd node_backend && npm start"
+    "postinstall": "cd backend && npm install",
+    "build": "cd backend && npm install",
+    "start": "cd backend && npm start"
   },
   "engines": {
     "node": ">=20.0.0"

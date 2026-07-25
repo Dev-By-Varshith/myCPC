@@ -27,3 +27,17 @@ yarn-error.log*
 .vscode/
 .idea/
 Thumbs.db
+
+# Scratch and Scripts
+*.txt
+*.py
+cf_profile/
+/chrome-extension/config.js
+
+# SQLite databases
+*.sqlite
+*.sqlite-journal
+
+# Ensure lock files are tracked
+!package-lock.json
+!yarn.lock

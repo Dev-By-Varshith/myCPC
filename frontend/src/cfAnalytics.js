@@ -708,8 +708,8 @@ export async function fetchDynamicCoachInsights(userHandle, onProgress) {
   
   // A curated pool of elite GMs to ensure we sample actual top-tier data without hitting 10MB endpoints.
   const GM_POOL = ['tourist', 'jiangly', 'Benq', 'Radewoosh', 'Petr', 'Um_nik', 'ksun48', 'Maroonrk', 'apiad', 'amiya', 'Geothermal', 'ecnerwala'];
-  // Dynamically select 2 distinct GMs for this analysis run
-  const selectedGms = GM_POOL.sort(() => 0.5 - Math.random()).slice(0, 2);
+  // Select the top 2 GMs deterministically for this analysis run to avoid random data changes
+  const selectedGms = GM_POOL.slice(0, 2);
 
   onProgress?.(`Analyzing real-time data for ${selectedGms.join(' & ')}...`);
   
@@ -774,7 +774,7 @@ export async function fetchDynamicCoachInsights(userHandle, onProgress) {
     avgDifficulty: diffCount > 0 ? Math.round(diffSum / diffCount) : 2540,
     avgAttempts: attemptsCount > 0 ? (attemptsSum / attemptsCount).toFixed(2) : 1.42,
     cadence: cadenceSum > 0 ? (cadenceSum / selectedGms.length).toFixed(1) + ' ACs / day' : '3.2 ACs / day',
-    avgTime2400: '18m ' + Math.floor(Math.random() * 40 + 10) + 's', // Minor simulated metric based on research
+    avgTime2400: 'N/A', // Time data isn't readily available from this endpoint
     tags: []
   };
 

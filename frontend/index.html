@@ -2,11 +2,27 @@
 <html lang="en">
   <head>
     <meta charset="UTF-8" />
-    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <link rel="icon" type="image/png" href="/assets/mycpc-logo.png" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>frontend</title>
+    <meta name="description" content="myCPC — AI-Powered Competitive Programming Coach. Opportunity · Choice · Growth." />
+    <title>myCPC — AI Coach Platform</title>
   </head>
   <body>
+    <script>
+      window.addEventListener('error', function(e) {
+        var errDiv = document.createElement('div');
+        errDiv.style.position = 'fixed';
+        errDiv.style.top = '0';
+        errDiv.style.left = '0';
+        errDiv.style.width = '100%';
+        errDiv.style.padding = '20px';
+        errDiv.style.background = 'red';
+        errDiv.style.color = 'white';
+        errDiv.style.zIndex = '999999';
+        errDiv.innerText = 'Global Error: ' + e.message + ' at ' + e.filename + ':' + e.lineno;
+        document.body.appendChild(errDiv);
+      });
+    </script>
     <div id="root"></div>
     <script type="module" src="/src/main.jsx"></script>
   </body>

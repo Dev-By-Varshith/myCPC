@@ -10,13 +10,27 @@ import {
   Dna, 
   Settings,
   Target,
-  Activity
+  Activity,
+  Cpu,
+  Gauge,
+  TrendingUp,
+  Zap,
+  Trophy,
+  Shield,
+  RotateCcw
 } from 'lucide-react'
+import MyCPCLogo from './MyCPCLogo'
 import './index.css'
 import { runFullAnalysis, saveGoals, loadGoals, generateDailyPlan, fetchAllTags, fetchProblemsByTags, fetchSolverRankBreakdown, RANK_TIERS, loadUserProfile, saveUserProfile, loadDailyProgress, saveDailyProgress, syncDailyProgress, findDynamicRivals, fetchRatingHistories, fetchDynamicCoachInsights } from './cfAnalytics'
 import { getDailyQueue, getAllTracked, addToSpacedRep, reviewProblem, removeFromSpacedRep, savePreFlight, getPreFlights, hasCompletedPreFlight, isTiltActive, triggerTilt, getTiltRemainingSeconds, getTodayCycle, setTodayCycle, updateCycleProblemStatus, getCycleHistory } from './spacedRep'
 import SkillTree3D from './SkillTree3D';
 import Heatmap3D from './Heatmap3D';
+import CoachReportView from './CoachReportView';
+import SkillGraph from './SkillGraph';
+import CommunityLeaderboard from './CommunityLeaderboard';
+import CoachPortal from './CoachPortal';
+import UpsolveQueue from './UpsolveQueue';
+import DNADashboard from './DNADashboard';
 
 const BACKEND = import.meta.env.VITE_BACKEND_URL || 'http://localhost:3002';
 
@@ -36,7 +50,7 @@ function App() {
   const [rankFilter, setRankFilter] = useState('All Ranks');
   
   // Profile Hub State
-  const [cfHandle, setCfHandle] = useState('tourist');
+  const [cfHandle, setCfHandle] = useState('');
   const [lcHandle, setLcHandle] = useState('');
   const [profile, setProfile] = useState({ avatar: '', rank: '', rating: '', loading: false });
   const [heatmap, setHeatmap] = useState([]);
@@ -115,6 +129,12 @@ function App() {
   const [coachNvidiaKey, setCoachNvidiaKey] = useState(() => localStorage.getItem('ag_nvidia_key') || '');
   const [coachWeakness, setCoachWeakness] = useState(null);
   const [coachSession, setCoachSession] = useState(null);  // { sessionId, startedAt }
+  // ── Crucible Adversarial Engine State ──────────────────────────────
+  const [advStarGraph, setAdvStarGraph] = useState(false);
+  const [advBamboo, setAdvBamboo] = useState(false);
+  const [advDisconnected, setAdvDisconnected] = useState(false);
+  const [advEmpty, setAdvEmpty] = useState(false);
+  const [advWorstCase, setAdvWorstCase] = useState('');
 
   // ── NEW: Training Cycle State ─────────────────────────────────────────
   const [cycleToday, setCycleToday] = useState(getTodayCycle());
@@ -123,7 +143,97 @@ function App() {
   const cycleTimerRef = useRef(null);
   const [backendHealth, setBackendHealth] = useState(null);
 
+  // ── DACE Complexity Analyzer State ──────────────────────────────────
+  const [daceCode, setDaceCode] = useState('');
+  const [daceResult, setDaceResult] = useState(null);
+
+  // ── Memory Profiler State ──────────────────────────────────────────
+  const [memCode, setMemCode] = useState('');
+  const [memResult, setMemResult] = useState(null);
+
+  // ── Contest Simulator / EV Engine State ─────────────────────────────
+  const [evMinutesIn, setEvMinutesIn] = useState(45);
+  const [evConfidence, setEvConfidence] = useState(70);
+  const [evPenalty, setEvPenalty] = useState(10);
+  const [evResult, setEvResult] = useState(null);
+
+  // ── Telemetry State ────────────────────────────────────────────────
+  const [telemetryProfile, setTelemetryProfile] = useState(null);
+
+  // ── Drawdown Profiler State ────────────────────────────────────────
+  const [drawdownData, setDrawdownData] = useState(null);
+
+  // ── Coach Report State (Real session ID) ──────────────────────────
+  const [latestSessionId, setLatestSessionId] = useState(null);
+
+  // ── Loading Screen State ───────────────────────────────────────────
+  const [appLoading, setAppLoading] = useState(true);
+  const [loadingMsg, setLoadingMsg] = useState('Initializing myCPC...');
+
+  // ── Phase 5: Performance Arc ───────────────────────────────────────
+  const [arcData, setArcData] = useState(null);
+  const [arcLoading, setArcLoading] = useState(false);
+
+  // ── Phase 5: Achievement System ───────────────────────────────────
+  const [achievements, setAchievements] = useState(null);
+  const [achievementsLoading, setAchievementsLoading] = useState(false);
+
+  // ── Phase 5: Peer DNA Comparison ──────────────────────────────────
+  const [peerHandle, setPeerHandle] = useState('');
+  const [peerData, setPeerData] = useState(null);
+  const [peerLoading, setPeerLoading] = useState(false);
+
+  // ── Phase 5: Contest Post-Mortem ──────────────────────────────────
+  const [pmContestId, setPmContestId] = useState('');
+  const [pmData, setPmData] = useState(null);
+  const [pmLoading, setPmLoading] = useState(false);
+
+  // ── Phase 5: Mentor View ──────────────────────────────────────────
+  const [mentorStudents, setMentorStudents] = useState(null);
+  const [mentorStudentHandle, setMentorStudentHandle] = useState('');
+  const [mentorSelectedSession, setMentorSelectedSession] = useState('');
+  const [mentorAnnotation, setMentorAnnotation] = useState('');
+  const [mentorAnnotationType, setMentorAnnotationType] = useState('note');
+  const [mentorAnnotations, setMentorAnnotations] = useState([]);
+
+  // ── Phase 5: AI Coach Chat ────────────────────────────────────────
+  const [chatMessages, setChatMessages] = useState([]);
+  const [chatInput, setChatInput] = useState('');
+  const [chatLoading, setChatLoading] = useState(false);
+
+  // ── Skill Scores (for Tactical Gap Matrix) ────────────────────────
+  const [skillScores, setSkillScores] = useState([]);
+
+  // ── Golden Path (real recommendations) ───────────────────────────
+  const [goldenProblems, setGoldenProblems] = useState([]);
+  const [goldenLoading, setGoldenLoading] = useState(false);
+
+
   const GM_REFS = ['tourist', 'jiangly', 'Benq'];
+
+  // ── Loading screen sequence ────────────────────────────────────────
+  useEffect(() => {
+    const msgs = [
+      'Initializing myCPC...',
+      'Connecting to Codeforces API...',
+      'Building skill dependency graph...',
+      'Loading spaced repetition queue...',
+      'Calibrating complexity analyzer...',
+      'Ready.'
+    ];
+    let i = 0;
+    const iv = setInterval(() => {
+      i++;
+      if (i < msgs.length) setLoadingMsg(msgs[i]);
+      else { clearInterval(iv); setAppLoading(false); }
+    }, 400);
+    return () => clearInterval(iv);
+  }, []);
+
+  // ── Number formatter ───────────────────────────────────────────────
+  const fmt = (n) => typeof n === 'number' ? n.toLocaleString() : n;
+
+
 
   // ── Effects ───────────────────────────────────────────────────────────
   // Refresh SR queue on mount
@@ -172,6 +282,11 @@ function App() {
     refreshSR();
     // Check backend health
     fetch(`${BACKEND}/api/health`).then(r => r.json()).then(setBackendHealth).catch(() => setBackendHealth(null));
+    // Fetch latest session ID for coach report
+    fetch(`${BACKEND}/api/user/latest-session/${cfHandle}`)
+      .then(r => r.json())
+      .then(data => { if (data.success && data.sessionId) setLatestSessionId(data.sessionId); })
+      .catch(() => {});
     // Tilt init
     if (isTiltActive()) { setTiltActive(true); setTiltRemaining(getTiltRemainingSeconds()); startTiltTicker(); }
     return true;
@@ -406,70 +521,126 @@ function App() {
     } catch(e) { console.error(e); setProfile(prev => ({ ...prev, loading: false })); }
   };
 
-  const [solutions, setSolutions] = useState([
-    { handle: "tourist", rank: "legendary grandmaster", lang: "C++17 (GCC 7-32)", time: "15ms", mem: "256KB" },
-    { handle: "Benq", rank: "grandmaster", lang: "C++20 (GCC 13-64)", time: "31ms", mem: "1024KB" },
-    { handle: "Radewoosh", rank: "international grandmaster", lang: "C++17 (GCC 7-32)", time: "15ms", mem: "0KB" }
-  ]);
+  const [solutions, setSolutions] = useState([]);
 
   useEffect(() => {
     fetchUserProfile();
-    setTimeout(() => {
-      const mockTimeline = [
-        { handle: "tourist", rank: "GM", problem: "A", time: 120, verdict: "AC" },
-        { handle: "tourist", rank: "GM", problem: "B", time: 310, verdict: "AC" },
-        { handle: "base_16", rank: "EXP", problem: "A", time: 340, verdict: "WA" },
-        { handle: "base_16", rank: "EXP", problem: "A", time: 450, verdict: "AC" },
-        { handle: "tourist", rank: "GM", problem: "C", time: 820, verdict: "AC" }
-      ];
-      setTimeline(mockTimeline);
-      setLoading(false);
-    }, 1500);
+    setLoading(false);
   }, []);
 
   const renderSidebar = () => (
     <aside className="sidebar">
-      <div style={{ padding: '0 16px 32px', display: 'flex', alignItems: 'center', gap: '12px' }}>
-        <div className="status-dot-vision"></div>
+      <div className="sidebar-brand" onClick={() => setIsSpatialHome(true)} style={{ cursor: 'pointer' }}>
+        <MyCPCLogo size="sm" />
         <div>
-          <h1 className="text-sm text-primary" style={{ letterSpacing: '0.05em' }}>CF_GRANDMASTER</h1>
-          <p className="text-micro text-cyan">SYSTEM.ONLINE</p>
+          <div className="sidebar-brand-name">myCPC</div>
+          <div className="sidebar-brand-sub">Opportunity · Choice · Growth</div>
         </div>
       </div>
-      
-      <div className="text-micro text-muted" style={{ padding: '0 16px', marginBottom: '8px' }}>DASHBOARD VIEWS</div>
-      <div className="nav-item" onClick={() => setIsSpatialHome(true)} style={{ color: 'var(--accent-orange)' }}>
-         ⌂ Spatial Home
+
+      <div className="sidebar-section-label">Main</div>
+      <div className="nav-item" onClick={() => setIsSpatialHome(true)}>
+        <BarChart3 size={14} /> Home
       </div>
       <div className={`nav-item ${activeView === 'command_center' ? 'active' : ''}`} onClick={() => setActiveView('command_center')}>
-        Command Center
+        <Activity size={14} /> Command Center
       </div>
-      <div className={`nav-item ${activeView === 'crucible' ? 'active' : ''}`} onClick={() => setActiveView('crucible')}>
-        The Crucible (Matrix)
+
+      <div className="sidebar-section-label">Community & Coach</div>
+      <div className={`nav-item ${activeView === 'community' ? 'active' : ''}`} onClick={() => setActiveView('community')}>
+        <Trophy size={14} /> Global Leaderboard
       </div>
-      <div className={`nav-item ${activeView === 'golden_path' ? 'active' : ''}`} onClick={() => setActiveView('golden_path')}>
-        Promotions & Golden Path
+      <div className={`nav-item ${activeView === 'coach_portal' ? 'active' : ''}`} onClick={() => setActiveView('coach_portal')}>
+        <Shield size={14} /> Coach Portal
+      </div>
+      <div className={`nav-item ${activeView === 'upsolve_queue' ? 'active' : ''}`} onClick={() => setActiveView('upsolve_queue')}>
+        <RotateCcw size={14} /> Upsolve Queue
+      </div>
+
+      <div className="sidebar-section-label">Training</div>
+      <div className={`nav-item ${activeView === 'training_hub' ? 'active' : ''}`} onClick={() => setActiveView('training_hub')}>
+        <Flame size={14} /> Training Hub
       </div>
       <div className={`nav-item ${activeView === 'graveyard' ? 'active' : ''}`} onClick={() => setActiveView('graveyard')}>
-        The Graveyard
+        <Ghost size={14} /> Spaced Repetition
       </div>
-      <div className={`nav-item ${activeView === 'code_explorer' ? 'active' : ''}`} onClick={() => setActiveView('code_explorer')}>
-        GM Code Explorer
+
+      <div className="sidebar-section-label">Analysis</div>
+      <div className={`nav-item ${activeView === 'crucible' ? 'active' : ''}`} onClick={() => setActiveView('crucible')}>
+        <BrainCircuit size={14} /> Socratic Coach
       </div>
-      <div className={`nav-item ${activeView === 'palantir_hub' ? 'active' : ''}`} onClick={() => setActiveView('palantir_hub')} style={{ borderTop: '1px solid rgba(255,255,255,0.05)', marginTop: '8px', paddingTop: '16px' }}>
-        ◆ Palantir Intelligence
+      <div className={`nav-item ${activeView === 'complexity_analyzer' ? 'active' : ''}`} onClick={() => setActiveView('complexity_analyzer')}>
+        <Cpu size={14} /> DACE Analyzer
+      </div>
+      <div className={`nav-item ${activeView === 'memory_profiler' ? 'active' : ''}`} onClick={() => setActiveView('memory_profiler')}>
+        <Zap size={14} /> Memory Profiler
       </div>
       <div className={`nav-item ${activeView === 'topic_explorer' ? 'active' : ''}`} onClick={() => { setActiveView('topic_explorer'); if (teAllTags.length === 0) fetchAllTags().then(setTeAllTags).catch(() => {}); }}>
-        🔍 Topic Explorer
+        <Target size={14} /> Topic Explorer
       </div>
-      <div className={`nav-item ${activeView === 'training_hub' ? 'active' : ''}`} onClick={() => setActiveView('training_hub')}>
-        🔥 Training Hub
+      <div className={`nav-item ${activeView === 'golden_path' ? 'active' : ''}`} onClick={() => setActiveView('golden_path')}>
+        <Sparkles size={14} /> Golden Path
+      </div>
+      <div className={`nav-item ${activeView === 'palantir_hub' ? 'active' : ''}`} onClick={() => setActiveView('palantir_hub')}>
+        <Eye size={14} /> Palantir Intel
+      </div>
+      <div className={`nav-item ${activeView === 'code_explorer' ? 'active' : ''}`} onClick={() => setActiveView('code_explorer')}>
+        <BarChart3 size={14} /> GM Code Explorer
+      </div>
+
+      <div className="sidebar-section-label">Contest</div>
+      <div className={`nav-item ${activeView === 'contest_simulator' ? 'active' : ''}`} onClick={() => setActiveView('contest_simulator')}>
+        <Gauge size={14} /> EV & Risk Engine
+      </div>
+      <div className={`nav-item ${activeView === 'telemetry' ? 'active' : ''}`} onClick={() => setActiveView('telemetry')}>
+        <Activity size={14} /> Micro-Telemetry
+      </div>
+      <div className={`nav-item ${activeView === 'drawdown' ? 'active' : ''}`} onClick={() => setActiveView('drawdown')}>
+        <TrendingUp size={14} /> Drawdown Profiler
+      </div>
+
+
+      <div className="sidebar-section-label">Profile</div>
+      <div className={`nav-item ${activeView === 'dna_dashboard' ? 'active' : ''}`} onClick={() => setActiveView('dna_dashboard')}>
+        <Dna size={14} /> Coder DNA
+      </div>
+      <div className={`nav-item ${activeView === 'performance_arc' ? 'active' : ''}`} onClick={() => { setActiveView('performance_arc'); if (!arcData) loadArc(); }}>
+        <TrendingUp size={14} /> Performance Arc
+      </div>
+      <div className={`nav-item ${activeView === 'achievements' ? 'active' : ''}`} onClick={() => { setActiveView('achievements'); if (!achievements) loadAchievements(); }}>
+        <Trophy size={14} /> Achievements
       </div>
       <div className={`nav-item ${activeView === 'skill_tree' ? 'active' : ''}`} onClick={() => setActiveView('skill_tree')}>
-        🧬 Neural Skill Tree
+        <Dna size={14} /> Skill Tree
       </div>
-      <div className={`nav-item ${activeView === 'settings' ? 'active' : ''}`} onClick={() => setActiveView('settings')} style={{ borderTop: '1px solid rgba(255,255,255,0.05)', marginTop: '8px', paddingTop: '16px' }}>
-        ⚙️ Profile & Settings
+      <div className={`nav-item ${activeView === 'peer_compare' ? 'active' : ''}`} onClick={() => setActiveView('peer_compare')}>
+        <Eye size={14} /> Peer Comparison
+      </div>
+      <div className={`nav-item ${activeView === 'contest_postmortem' ? 'active' : ''}`} onClick={() => setActiveView('contest_postmortem')}>
+        <BarChart3 size={14} /> Contest Post-Mortem
+      </div>
+      <div className={`nav-item ${activeView === 'ai_coach_chat' ? 'active' : ''}`} onClick={() => setActiveView('ai_coach_chat')}>
+        <BrainCircuit size={14} /> AI Coach Chat
+      </div>
+      <div className={`nav-item ${activeView === 'mentor_view' ? 'active' : ''}`} onClick={() => { setActiveView('mentor_view'); if (!mentorStudents) loadMentorStudents(); }}>
+        <Shield size={14} /> Mentor View
+      </div>
+      <div className={`nav-item ${activeView === 'settings' ? 'active' : ''}`} onClick={() => setActiveView('settings')}>
+        <Settings size={14} /> Settings
+      </div>
+
+      {/* User card at bottom */}
+      <div style={{ marginTop: 'auto' }}>
+        <div className="sidebar-user-card" onClick={() => setActiveView('settings')}>
+          <div style={{ width: '28px', height: '28px', borderRadius: '50%', background: 'var(--icpc-blue)', overflow: 'hidden', flexShrink: 0 }}>
+            {profile.avatar && <img src={profile.avatar} alt="avatar" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />}
+          </div>
+          <div style={{ minWidth: 0 }}>
+            <div className="sidebar-user-handle" style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{cfHandle}</div>
+            <div className="sidebar-user-rank">{profile.rank || 'Unrated'}</div>
+          </div>
+          <div className="status-dot status-dot-online" style={{ marginLeft: 'auto', flexShrink: 0 }}></div>
+        </div>
       </div>
     </aside>
   );
@@ -492,8 +663,8 @@ function App() {
 
     return (
     <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gridTemplateRows: 'auto auto auto', gap: '20px' }}>
-      {/* Rating Curve â€” spans 2 cols */}
-      <div className="glass-panel-outer" style={{ gridColumn: 'span 2', padding: '20px' }}>
+      {/* Rating Curve — spans 2 cols */}
+      <div className="cf-card" style={{ gridColumn: 'span 2', padding: '20px' }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
           <h2 className="text-micro text-muted">RATING TRAJECTORY</h2>
           <div style={{ display: 'flex', alignItems: 'baseline', gap: '12px' }}>
@@ -501,7 +672,7 @@ function App() {
             <span className="text-mono text-micro" style={{ color: getCfColor(currentRating), textTransform: 'capitalize' }}>{profile.rank}</span>
           </div>
         </div>
-        <div className="quant-table-container" style={{ padding: '0', overflow: 'hidden', background: 'rgba(0,0,0,0.2)' }}>
+        <div className="cf-table-container" style={{ padding: '0', overflow: 'hidden', background: 'var(--bg-page)' }}>
           {ratingCurve.length > 1 ? (
           <svg viewBox={`0 0 ${chartW} ${chartH}`} style={{ width: '100%', height: '260px', display: 'block' }} preserveAspectRatio="none">
             {bands.map((b, i) => {
@@ -514,8 +685,8 @@ function App() {
             })}
             
             {/* Axis labels */}
-            <text x="5" y="15" fill="rgba(255,255,255,0.4)" fontSize="10" fontFamily="monospace">{rMax}</text>
-            <text x="5" y={chartH - 5} fill="rgba(255,255,255,0.4)" fontSize="10" fontFamily="monospace">{rMin}</text>
+            <text x="5" y="15" fill="var(--text-muted)" fontSize="10" fontFamily="monospace">{rMax}</text>
+            <text x="5" y={chartH - 5} fill="var(--text-muted)" fontSize="10" fontFamily="monospace">{rMin}</text>
             
             <polyline points={curvePoints} className="rating-line" />
             {ratingCurve.map((p, i) => i % Math.max(1, Math.floor(ratingCurve.length / 30)) === 0 && (
@@ -529,11 +700,11 @@ function App() {
       </div>
 
       {/* Profile Hub */}
-      <div className="glass-panel-outer" style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+      <div className="cf-card" style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
         <h2 className="text-micro text-muted">IDENTITY HUB</h2>
-        <div className="quant-table-container" style={{ padding: '16px', display: 'flex', flexDirection: 'column', gap: '14px' }}>
+        <div className="cf-table-container" style={{ padding: '16px', display: 'flex', flexDirection: 'column', gap: '14px' }}>
           <div style={{ display: 'flex', gap: '14px', alignItems: 'center' }}>
-            <div style={{ width: '56px', height: '56px', borderRadius: '50%', background: 'var(--bg-glass-inner)', overflow: 'hidden', border: `2px solid ${getCfColor(currentRating)}` }}>
+            <div style={{ width: '56px', height: '56px', borderRadius: '50%', background: 'var(--bg-code)', overflow: 'hidden', border: `2px solid ${getCfColor(currentRating)}` }}>
               {profile.avatar && <img src={profile.avatar} alt="avatar" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />}
             </div>
             <div>
@@ -541,18 +712,18 @@ function App() {
               <div className="text-mono text-micro text-secondary" style={{ textTransform: 'capitalize' }}>{profile.rank || 'Sync Profile in Settings'}</div>
             </div>
           </div>
-          <button onClick={() => setActiveView('settings')} style={{ background: 'rgba(255,255,255,0.1)', color: 'var(--text-primary)', border: '1px solid rgba(255,255,255,0.2)', borderRadius: '8px', padding: '10px', cursor: 'pointer', fontWeight: 'bold', width: '100%', transition: 'opacity 0.2s' }}>
+          <button onClick={() => setActiveView('settings')} className="btn btn-outline" style={{ width: '100%', padding: '9px' }}>
             EDIT GLOBAL PROFILE
           </button>
         </div>
         {/* Macro-Cycle Periodization */}
-        <div className="quant-table-container" style={{ padding: '14px', flexGrow: 1, display: 'flex', flexDirection: 'column' }}>
+        <div className="cf-table-container" style={{ padding: '14px', flexGrow: 1, display: 'flex', flexDirection: 'column' }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '10px' }}>
             <div className="text-micro text-secondary">TRAINING CYCLE (TODAY)</div>
             {backendHealth ? (
-               <div className="text-mono text-micro text-green">DB SYNCED</div>
+               <div className="text-mono text-micro verdict-ac">DB SYNCED</div>
             ) : (
-               <div className="text-mono text-micro text-orange">DB OFFLINE</div>
+               <div className="text-mono text-micro verdict-tle">DB OFFLINE</div>
             )}
           </div>
           
@@ -560,15 +731,15 @@ function App() {
              <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', flexGrow: 1 }}>
                 <div style={{ display: 'flex', justifyContent: 'space-between' }}>
                   <span className="text-mono text-sm text-primary" style={{ textTransform: 'uppercase' }}>{cycleToday.type} PHASE</span>
-                  <span className="text-mono text-sm text-cyan">{cycleToday.problems.filter(p => p.status === 'passed').length} / {cycleToday.problems.length} AC</span>
+                  <span className="text-mono text-sm text-primary">{cycleToday.problems.filter(p => p.status === 'passed').length} / {cycleToday.problems.length} AC</span>
                 </div>
                 
                 <div style={{ flexGrow: 1, overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: '6px' }}>
                    {cycleToday.problems.map((p, idx) => (
-                     <div key={p.id} style={{ display: 'flex', justifyContent: 'space-between', padding: '6px', background: p.status === 'passed' ? 'rgba(0, 255, 136, 0.1)' : 'var(--bg-glass-inner)', border: '1px solid var(--border-quant-harsh)', borderRadius: '4px' }}>
+                     <div key={p.id} style={{ display: 'flex', justifyContent: 'space-between', padding: '6px', background: p.status === 'passed' ? 'rgba(0, 255, 136, 0.1)' : 'var(--bg-code)', border: '1px solid var(--border)', borderRadius: '4px' }}>
                        <span className="text-mono text-micro text-primary" style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', maxWidth: '120px' }}>{p.id}</span>
                        {p.status === 'passed' ? (
-                         <span className="text-mono text-micro text-green">AC</span>
+                         <span className="text-mono text-micro verdict-ac">AC</span>
                        ) : (
                          <div style={{ display: 'flex', gap: '4px' }}>
                            <button onClick={() => updateCycleProblemStatus(new Date().toISOString().split('T')[0], p.id, 'passed')} style={{ background: 'none', border: 'none', color: '#00ff88', cursor: 'pointer' }}>✓</button>
@@ -581,16 +752,22 @@ function App() {
              </div>
           ) : (
              <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', justifyContent: 'center', flexGrow: 1 }}>
-                <button onClick={() => planToday('volume')} style={{ background: 'var(--bg-glass-inner)', border: '1px solid var(--accent-blue)', color: 'var(--text-primary)', padding: '8px', borderRadius: '4px', cursor: 'pointer' }} className="text-mono text-sm">SET VOLUME (10x -500 ELO)</button>
-                <button onClick={() => planToday('intensity')} style={{ background: 'var(--bg-glass-inner)', border: '1px solid var(--accent-orange-muted)', color: 'var(--text-primary)', padding: '8px', borderRadius: '4px', cursor: 'pointer' }} className="text-mono text-sm">SET INTENSITY (2x +200 ELO)</button>
-                <button onClick={() => planToday('deload')} style={{ background: 'var(--bg-glass-inner)', border: '1px solid var(--border-quant-harsh)', color: 'var(--text-primary)', padding: '8px', borderRadius: '4px', cursor: 'pointer' }} className="text-mono text-sm">SET DELOAD (Rest)</button>
+                <button onClick={() => planToday('volume')} style={{ background: 'var(--bg-code)', border: '1px solid var(--icpc-blue)', color: 'var(--text-dark)', padding: '8px', borderRadius: '4px', cursor: 'pointer' }} className="text-mono text-sm">SET VOLUME (10x -500 ELO)</button>
+                <button onClick={() => planToday('intensity')} style={{ background: 'var(--bg-code)', border: '1px solid var(--cf-tle-orange)', color: 'var(--text-dark)', padding: '8px', borderRadius: '4px', cursor: 'pointer' }} className="text-mono text-sm">SET INTENSITY (2x +200 ELO)</button>
+                <button onClick={() => planToday('deload')} style={{ background: 'var(--bg-code)', border: '1px solid var(--border)', color: 'var(--text-dark)', padding: '8px', borderRadius: '4px', cursor: 'pointer' }} className="text-mono text-sm">SET DELOAD (Rest)</button>
              </div>
           )}
         </div>
       </div>
 
+      {/* ── Phase 5 Dashboard Extensions ── */}
+      <div style={{ display: 'grid', gridTemplateColumns: '2fr 1fr', gap: '20px', marginBottom: '20px' }}>
+          <CoachReportView sessionId={latestSessionId} />
+          <SkillGraph cfHandle={cfHandle} />
+      </div>
+
       {/* Heatmap — 2D / 3D toggle */}
-      <div className="glass-panel-outer" style={{ gridColumn: 'span 3', padding: '20px' }}>
+      <div className="cf-card" style={{ gridColumn: 'span 3', padding: '20px' }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '14px', flexWrap: 'wrap', gap: 10 }}>
           <div>
             <h2 className="text-micro text-muted" style={{ marginBottom: 6 }}>PROBLEM SOLVE HEATMAP (52 WEEKS) — COLORED BY HIGHEST RATED SOLVE</h2>
@@ -598,17 +775,17 @@ function App() {
               {[{l:'<1200',c:'#808080'},{l:'1400',c:'#00ff88'},{l:'1600',c:'#00e5cc'},{l:'1900',c:'#4488ff'},{l:'2100',c:'#cc44ff'},{l:'2400+',c:'#ff4444'}].map((b,i) => (
                 <div key={i} style={{ display: 'flex', alignItems: 'center', gap: '3px' }}>
                   <div style={{ width: '9px', height: '9px', borderRadius: '2px', background: b.c, boxShadow: `0 0 5px ${b.c}77` }}></div>
-                  <span className="text-mono" style={{ fontSize: '9px', color: 'var(--text-secondary)' }}>{b.l}</span>
+                  <span className="text-mono" style={{ fontSize: '9px', color: 'var(--text-muted)' }}>{b.l}</span>
                 </div>
               ))}
             </div>
           </div>
-          <div style={{ display: 'flex', background: 'rgba(0,0,0,0.3)', borderRadius: 12, padding: 3, border: '1px solid rgba(255,255,255,0.08)' }}>
+          <div style={{ display: 'flex', background: 'transparent', borderRadius: 12, padding: 3, border: '1px solid var(--border)' }}>
             {['2d','3d'].map(mode => (
               <button key={mode} onClick={() => setHeatmapMode(mode)} style={{
                 padding: '5px 16px', borderRadius: 9, border: 'none', cursor: 'pointer',
                 background: heatmapMode === mode ? 'rgba(94,207,255,0.18)' : 'transparent',
-                color: heatmapMode === mode ? 'var(--accent-cyan)' : 'var(--text-secondary)',
+                color: heatmapMode === mode ? 'var(--icpc-blue)' : 'var(--text-muted)',
                 fontWeight: heatmapMode === mode ? 700 : 500, fontSize: 11,
                 transition: 'all 0.2s', transform: 'none'
               }}>{mode.toUpperCase()}</button>
@@ -649,7 +826,7 @@ function App() {
             </div>
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(52, 1fr)', gridTemplateRows: 'repeat(7, 1fr)', gridAutoFlow: 'column', gap: '2px' }}>
             {heatmap.map((day, i) => {
-              const hBg = day.maxRating > 0 ? getCfColor(day.maxRating) : 'rgba(255,255,255,0.04)';
+              const hBg = day.maxRating > 0 ? getCfColor(day.maxRating) : 'var(--bg-page)';
               const hOp = day.count > 0 ? Math.min(0.45 + day.count * 0.18, 1) : 0.18;
               return (
                 <div key={i}
@@ -667,16 +844,16 @@ function App() {
       </div>
 
       {/* Monthly Tag Analytics */}
-      <div className="glass-panel-outer" style={{ padding: '20px' }}>
-        <h2 className="text-micro text-muted" style={{ marginBottom: '14px' }}>TAG ANALYTICS â€” {currentMonthName.toUpperCase()} {new Date().getFullYear()}</h2>
-        <div className="quant-table-container" style={{ padding: '12px' }}>
+      <div className="cf-card" style={{ padding: '20px' }}>
+        <h2 className="text-micro text-muted" style={{ marginBottom: '14px' }}>TAG ANALYTICS — {currentMonthName.toUpperCase()} {new Date().getFullYear()}</h2>
+        <div className="cf-table-container" style={{ padding: '12px' }}>
           {monthlyTags.length > 0 ? monthlyTags.map(([tag, cnt], i) => (
-            <div key={i} style={{ display: 'flex', alignItems: 'center', gap: '10px', padding: '5px 0', borderBottom: '1px solid rgba(255,255,255,0.03)' }}>
+            <div key={i} style={{ display: 'flex', alignItems: 'center', gap: '10px', padding: '5px 0', borderBottom: '1px solid var(--border)' }}>
               <span className="text-mono text-sm text-secondary" style={{ width: '140px' }}>{tag}</span>
-              <div style={{ flexGrow: 1, height: '8px', background: 'var(--bg-glass-inner)', borderRadius: '4px', overflow: 'hidden' }}>
-                <div style={{ width: `${Math.min((cnt / (monthlyTags[0]?.[1] || 1)) * 100, 100)}%`, height: '100%', background: 'var(--accent-blue)', borderRadius: '4px', opacity: 0.7 }}></div>
+              <div style={{ flexGrow: 1, height: '8px', background: 'var(--bg-code)', borderRadius: '4px', overflow: 'hidden' }}>
+                <div style={{ width: `${Math.min((cnt / (monthlyTags[0]?.[1] || 1)) * 100, 100)}%`, height: '100%', background: 'var(--icpc-blue)', borderRadius: '4px', opacity: 0.7 }}></div>
               </div>
-              <span className="text-mono text-sm text-cyan" style={{ width: '30px', textAlign: 'right' }}>{cnt}</span>
+              <span className="text-mono text-sm text-primary" style={{ width: '30px', textAlign: 'right' }}>{cnt}</span>
             </div>
           )) : (
             <p className="text-mono text-sm text-muted" style={{ padding: '20px', textAlign: 'center' }}>Sync identity to load tags</p>
@@ -685,42 +862,46 @@ function App() {
       </div>
 
       {/* Tactical Gap Matrix */}
-      <div className="glass-panel-outer" style={{ gridColumn: 'span 2', padding: '20px' }}>
-        <h2 className="text-micro text-muted" style={{ marginBottom: '14px' }}>TACTICAL GAP MATRIX</h2>
-        {(() => {
-          const tags = ['dp', 'graphs', 'greedy', 'math', 'constructive', 'strings'];
-          const diffs = ['1400', '1600', '1800', '2000', '2200'];
+      <div className="cf-card" style={{ gridColumn: 'span 2', padding: '20px' }}>
+        <h2 className="text-micro text-muted" style={{ marginBottom: '14px' }}>TACTICAL GAP MATRIX — SKILL ELO BY TOPIC</h2>
+        {skillScores.length > 0 ? (() => {
+          const sorted = [...skillScores].sort((a, b) => a.elo_rating - b.elo_rating).slice(0, 8);
+          const maxElo = Math.max(...skillScores.map(s => s.elo_rating), 1500);
+          const minElo = Math.min(...skillScores.map(s => s.elo_rating), 1000);
           return (
-            <div className="quant-table-container" style={{ display: 'grid', gridTemplateColumns: `90px repeat(${diffs.length}, 1fr)`, overflow: 'auto' }}>
-              <div style={{ background: 'rgba(0,0,0,0.3)', padding: '8px' }}></div>
-              {diffs.map(d => <div key={d} className="text-mono text-micro text-center" style={{ padding: '8px', borderLeft: '1px solid var(--border-quant-harsh)', background: 'rgba(0,0,0,0.3)' }}>{d}</div>)}
-              {tags.map(tag => (
-                <div style={{ display: 'contents' }} key={tag}>
-                  <div className="text-mono text-sm text-secondary" style={{ padding: '10px 8px', borderTop: '1px solid var(--border-quant-harsh)' }}>{tag}</div>
-                  {diffs.map(diff => {
-                    const myAc = Math.floor(Math.random() * 80) + 10;
-                    const tgtAc = Math.floor(Math.random() * 40) + 50;
-                    const bg = myAc < tgtAc - 20 ? 'rgba(255,69,58,0.1)' : myAc >= tgtAc ? 'rgba(48,209,88,0.1)' : 'transparent';
-                    return (
-                      <div key={diff} style={{ borderTop: '1px solid var(--border-quant-harsh)', borderLeft: '1px solid var(--border-quant-harsh)', background: bg, padding: '8px', display: 'flex', flexDirection: 'column', gap: '2px' }}>
-                        <span className="text-mono text-micro text-primary">{myAc}%</span>
-                        <span className="text-mono text-micro text-muted">tgt:{tgtAc}%</span>
-                      </div>
-                    );
-                  })}
-                </div>
-              ))}
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+              {sorted.map(s => {
+                const pct = Math.max(0, Math.min(100, ((s.elo_rating - minElo) / Math.max(maxElo - minElo, 1)) * 100));
+                const color = s.elo_rating < 1200 ? '#ff4444' : s.elo_rating < 1400 ? '#ff8c00' : s.elo_rating < 1600 ? '#ffd700' : '#00ff88';
+                return (
+                  <div key={s.topic_tag} style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                    <span className="text-mono text-sm text-secondary" style={{ width: '120px', flexShrink: 0 }}>{s.topic_tag}</span>
+                    <div style={{ flexGrow: 1, height: '10px', background: 'var(--bg-code)', borderRadius: '5px', overflow: 'hidden' }}>
+                      <div style={{ width: `${pct}%`, height: '100%', background: color, borderRadius: '5px', transition: 'width 0.5s' }} />
+                    </div>
+                    <span className="text-mono text-sm" style={{ color, width: '50px', textAlign: 'right', flexShrink: 0 }}>{Math.round(s.elo_rating)}</span>
+                  </div>
+                );
+              })}
             </div>
           );
-        })()}
+        })() : (
+          <div style={{ padding: '40px 0', textAlign: 'center', color: 'var(--text-muted)' }}>
+            <p className="text-mono text-sm">No skill scores yet. Complete DNA sessions to populate this matrix.</p>
+            <button className="btn btn-outline" style={{ marginTop: '12px', fontSize: '11px', padding: '6px 16px' }}
+              onClick={() => fetch(`${BACKEND}/api/user/skills/${cfHandle}`).then(r => r.json()).then(d => d.success && setSkillScores(d.skills)).catch(() => {})}>
+              Load Skill Data
+            </button>
+          </div>
+        )}
       </div>
 
       {/* ── NEW: Run Rate Analytics & Yearly Graph ── */}
-      <div className="glass-panel-outer" style={{ gridColumn: 'span 3', padding: '24px', display: 'flex', flexDirection: 'column', gap: '20px' }}>
+      <div className="cf-card" style={{ gridColumn: 'span 3', padding: '24px', display: 'flex', flexDirection: 'column', gap: '20px' }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
           <div>
             <h2 className="text-lg text-primary" style={{ letterSpacing: '-0.02em', display: 'flex', alignItems: 'center', gap: '8px' }}>
-              <Activity size={20} color="var(--accent-cyan)" /> Ascension Run Rate & Yearly Trajectory
+              <Activity size={20} color="var(--icpc-blue)" /> Ascension Run Rate & Yearly Trajectory
             </h2>
             <p className="text-micro text-secondary" style={{ marginTop: '4px' }}>Projected solve volume based on current pacing.</p>
           </div>
@@ -729,16 +910,16 @@ function App() {
               <div className="text-micro text-muted">MONTH'S PACE</div>
               <div className="text-mono text-xl text-primary">{runRateData.monthCount} <span className="text-sm text-muted">→ {runRateData.monthExpected}</span></div>
             </div>
-            <div style={{ width: '1px', background: 'rgba(255,255,255,0.1)' }}></div>
+            <div style={{ width: '1px', background: 'var(--bg-hover)' }}></div>
             <div style={{ textAlign: 'right' }}>
               <div className="text-micro text-muted">YEAR'S PACE</div>
-              <div className="text-mono text-xl" style={{ color: 'var(--accent-cyan)' }}>{runRateData.yearCount} <span className="text-sm text-muted">→ {runRateData.yearExpected}</span></div>
+              <div className="text-mono text-xl" style={{ color: 'var(--icpc-blue)' }}>{runRateData.yearCount} <span className="text-sm text-muted">→ {runRateData.yearExpected}</span></div>
             </div>
           </div>
         </div>
 
         {/* Dynamic Gradient Yearly Graph */}
-        <div style={{ background: 'rgba(0,0,0,0.3)', borderRadius: '12px', padding: '16px', flexGrow: 1 }}>
+        <div style={{ background: 'transparent', borderRadius: '12px', padding: '16px', flexGrow: 1 }}>
           {runRateData.yearlyData && runRateData.yearlyData.length > 0 ? (
             (() => {
               const yd = runRateData.yearlyData;
@@ -766,18 +947,18 @@ function App() {
                       })}
                     </linearGradient>
                     <linearGradient id="yearlyFill" x1="0" y1="0" x2="0" y2="1">
-                      <stop offset="0%" stopColor="var(--accent-cyan)" stopOpacity="0.15" />
-                      <stop offset="100%" stopColor="var(--accent-cyan)" stopOpacity="0" />
+                      <stop offset="0%" stopColor="var(--icpc-blue)" stopOpacity="0.15" />
+                      <stop offset="100%" stopColor="var(--icpc-blue)" stopOpacity="0" />
                     </linearGradient>
                   </defs>
                   
                   {/* Grid lines */}
                   {[0, 0.5, 1].map(r => (
-                    <line key={r} x1={pX} y1={svgH - pY - r * plH} x2={svgW - pX} y2={svgH - pY - r * plH} stroke="rgba(255,255,255,0.05)" strokeDasharray="4 4" />
+                    <line key={r} x1={pX} y1={svgH - pY - r * plH} x2={svgW - pX} y2={svgH - pY - r * plH} stroke="var(--border)" strokeDasharray="4 4" />
                   ))}
-                  <text x={pX} y={pY - 5} fill="rgba(255,255,255,0.4)" fontSize="10" fontFamily="monospace">{yMax}</text>
-                  <text x={pX} y={svgH - 5} fill="rgba(255,255,255,0.4)" fontSize="10" fontFamily="monospace">0</text>
-                  <text x={svgW - pX} y={svgH - 5} fill="rgba(255,255,255,0.4)" fontSize="10" fontFamily="monospace" textAnchor="end">Dec 31</text>
+                  <text x={pX} y={pY - 5} fill="var(--text-muted)" fontSize="10" fontFamily="monospace">{yMax}</text>
+                  <text x={pX} y={svgH - 5} fill="var(--text-muted)" fontSize="10" fontFamily="monospace">0</text>
+                  <text x={svgW - pX} y={svgH - 5} fill="var(--text-muted)" fontSize="10" fontFamily="monospace" textAnchor="end">Dec 31</text>
 
                   {/* Fill area */}
                   <polygon points={`${pX},${svgH - pY} ${points} ${svgW - pX},${svgH - pY}`} fill="url(#yearlyFill)" />
@@ -786,7 +967,7 @@ function App() {
                   <polyline points={points} fill="none" stroke="url(#yearlyGradient)" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" />
                   
                   {/* Glowing end dot */}
-                  <circle cx={getX(yd.length - 1)} cy={getY(yd[yd.length - 1].cumulativeCount)} r="5" fill="var(--accent-cyan)" style={{ filter: 'drop-shadow(0 0 6px var(--accent-cyan))' }} />
+                  <circle cx={getX(yd.length - 1)} cy={getY(yd[yd.length - 1].cumulativeCount)} r="5" fill="var(--icpc-blue)" style={{ filter: 'drop-shadow(0 0 6px var(--icpc-blue))' }} />
                 </svg>
               );
             })()
@@ -802,42 +983,44 @@ function App() {
   const renderGraveyard = () => {
     const isTilt = isTiltActive();
     return (
-      <div className="glass-panel-outer" style={{ height: '100%', display: 'flex', flexDirection: 'column', padding: '20px' }}>
+      <div className="cf-card" style={{ height: '100%', display: 'flex', flexDirection: 'column', padding: '20px' }}>
         <h2 className="text-lg text-primary" style={{ marginBottom: '16px', letterSpacing: '-0.02em' }}>
           🪦 The Graveyard <span className="text-muted">— Ebbinghaus Spaced Repetition Engine</span>
         </h2>
+        {/* NOTE: For production, implement virtualization (e.g., react-window) for this table as it scales over 100+ rows */}
+        
         {isTilt && (
-          <div style={{ background: 'rgba(255, 68, 68, 0.15)', border: '1px solid #ff4444', padding: '16px', borderRadius: '8px', marginBottom: '16px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+          <div style={{ background: 'rgba(209, 35, 42, 0.1)', border: '1px solid var(--icpc-red)', padding: '16px', borderRadius: '4px', marginBottom: '16px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
             <div>
-              <div className="text-mono text-sm text-primary" style={{ color: '#ff4444' }}>TILT LOCKOUT ENGAGED</div>
+              <div className="text-mono text-sm verdict-wa">TILT LOCKOUT ENGAGED</div>
               <div className="text-micro text-secondary">3+ WAs within 5 minutes. Take a breath. Codeforces submissions paused.</div>
             </div>
-            <div className="text-mono text-lg text-primary">{Math.floor(tiltRemaining / 60)}:{(tiltRemaining % 60).toString().padStart(2, '0')}</div>
+            <div className="text-mono text-lg verdict-wa">{Math.floor(tiltRemaining / 60)}:{(tiltRemaining % 60).toString().padStart(2, '0')}</div>
           </div>
         )}
         
         {srActiveId ? (
-          <div className="glass-panel-outer" style={{ flexGrow: 1, padding: '20px', display: 'flex', flexDirection: 'column', gap: '16px' }}>
+          <div className="cf-card" style={{ flexGrow: 1, padding: '20px', display: 'flex', flexDirection: 'column', gap: '16px' }}>
              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-               <h3 className="text-lg text-cyan">{srActiveId}</h3>
+               <h3 className="text-lg text-primary">{srActiveId}</h3>
                <div className="text-mono text-sm text-primary">Timer: {Math.floor(srTimer / 60)}:{(srTimer % 60).toString().padStart(2, '0')}</div>
              </div>
              
              {!pfDone ? (
                <div style={{ flexGrow: 1, display: 'flex', flexDirection: 'column', gap: '12px' }}>
                   <div className="text-micro text-muted">PRE-FLIGHT GATE — REQUIRED BEFORE CODING</div>
-                  <input className="text-mono text-sm" style={{ background: 'var(--bg-glass-inner)', border: '1px solid var(--border-quant-harsh)', padding: '12px', color: 'var(--text-primary)' }} placeholder="Target Time Complexity (e.g. O(N log N))" value={pfTC} onChange={e => setPfTC(e.target.value)} />
-                  <input className="text-mono text-sm" style={{ background: 'var(--bg-glass-inner)', border: '1px solid var(--border-quant-harsh)', padding: '12px', color: 'var(--text-primary)' }} placeholder="Space Complexity (e.g. O(N))" value={pfSpace} onChange={e => setPfSpace(e.target.value)} />
-                  <input className="text-mono text-sm" style={{ background: 'var(--bg-glass-inner)', border: '1px solid var(--border-quant-harsh)', padding: '12px', color: 'var(--text-primary)' }} placeholder="3 Edge Cases to handle..." value={pfEdgeCases} onChange={e => setPfEdgeCases(e.target.value)} />
-                  <textarea className="text-mono text-sm" style={{ background: 'var(--bg-glass-inner)', border: '1px solid var(--border-quant-harsh)', padding: '12px', color: 'var(--text-primary)', height: '100px', resize: 'none' }} placeholder="Approach summary..." value={pfApproach} onChange={e => setPfApproach(e.target.value)} />
-                  <button onClick={submitPreFlight} style={{ padding: '12px', background: 'var(--accent-cyan)', color: '#000', fontWeight: 'bold', border: 'none', borderRadius: '4px', cursor: 'pointer' }}>SUBMIT PRE-FLIGHT</button>
+                  <input className="text-mono text-sm" placeholder="Target Time Complexity (e.g. O(N log N))" value={pfTC} onChange={e => setPfTC(e.target.value)} />
+                  <input className="text-mono text-sm" placeholder="Space Complexity (e.g. O(N))" value={pfSpace} onChange={e => setPfSpace(e.target.value)} />
+                  <input className="text-mono text-sm" placeholder="3 Edge Cases to handle..." value={pfEdgeCases} onChange={e => setPfEdgeCases(e.target.value)} />
+                  <textarea className="text-mono text-sm" placeholder="Approach summary..." value={pfApproach} onChange={e => setPfApproach(e.target.value)} style={{ height: '100px' }} />
+                  <button onClick={submitPreFlight} className="btn-cf" style={{ padding: '12px', width: '100%' }}>SUBMIT PRE-FLIGHT</button>
                </div>
              ) : (
                <div style={{ flexGrow: 1, display: 'flex', flexDirection: 'column', justifyContent: 'space-between' }}>
-                 <div className="text-mono text-sm text-green">Pre-Flight Approved. Workspace unlocked.</div>
+                 <div className="text-mono text-sm verdict-ac">Pre-Flight Approved. Workspace unlocked.</div>
                  <div style={{ display: 'flex', gap: '16px', marginTop: 'auto' }}>
-                    <button onClick={() => submitSRReview('pass')} style={{ flex: 1, padding: '16px', background: 'rgba(0, 255, 136, 0.2)', border: '1px solid #00ff88', color: '#00ff88', fontWeight: 'bold', cursor: 'pointer', borderRadius: '8px' }}>PASSED (Advance Stage)</button>
-                    <button onClick={() => submitSRReview('fail')} style={{ flex: 1, padding: '16px', background: 'rgba(255, 68, 68, 0.2)', border: '1px solid #ff4444', color: '#ff4444', fontWeight: 'bold', cursor: 'pointer', borderRadius: '8px' }}>FAILED (Reset to Stage 1)</button>
+                    <button onClick={() => submitSRReview('pass')} style={{ flex: 1, padding: '16px', background: 'rgba(0, 169, 0, 0.1)', border: '1px solid var(--icpc-green)', color: 'var(--icpc-green)', fontWeight: 'bold', cursor: 'pointer', borderRadius: '4px' }}>PASSED (Advance Stage)</button>
+                    <button onClick={() => submitSRReview('fail')} style={{ flex: 1, padding: '16px', background: 'rgba(209, 35, 42, 0.1)', border: '1px solid var(--icpc-red)', color: 'var(--icpc-red)', fontWeight: 'bold', cursor: 'pointer', borderRadius: '4px' }}>FAILED (Reset to Stage 1)</button>
                  </div>
                </div>
              )}
@@ -845,63 +1028,106 @@ function App() {
         ) : (
           <>
             <div className="text-micro text-secondary" style={{ marginBottom: '8px' }}>TODAY'S QUEUE ({srQueue.length})</div>
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', overflowY: 'auto', maxHeight: '40%' }}>
-              {srQueue.map(p => (
-                <div key={p.id} className="glass-panel-outer" style={{ padding: '12px 16px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', cursor: 'pointer' }} onClick={() => openSRProblem(p.id)}>
-                  <div>
-                    <div className="text-mono text-sm text-primary">{p.id} - {p.name} <span style={{ color: getCfColor(p.rating), marginLeft: '8px' }}>[{p.rating}]</span></div>
-                    <div className="text-micro text-muted">Stage: {p.reviewStage}/5 | Fails: {p.failedCount}</div>
-                  </div>
-                  <div className="text-mono text-micro text-cyan">REVIEW NOW ▶</div>
-                </div>
-              ))}
-              {srQueue.length === 0 && <div className="text-mono text-sm text-muted" style={{ padding: '20px' }}>No reviews due today.</div>}
+            <div className="cf-table-container" style={{ marginBottom: '24px' }}>
+              <table className="cf-table">
+                <thead>
+                  <tr>
+                    <th>Problem ID / Name</th>
+                    <th>Rating</th>
+                    <th>Stage</th>
+                    <th>Action</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {srQueue.map(p => (
+                    <tr key={p.id}>
+                      <td className="text-mono text-primary">{p.id} - {p.name}</td>
+                      <td className="text-mono" style={{ color: getCfColor(p.rating) }}>{p.rating}</td>
+                      <td className="text-mono text-secondary">Stage {p.reviewStage}/5 <span style={{ color: p.failedCount > 0 ? 'var(--icpc-red)' : 'inherit' }}>(Fails: {p.failedCount})</span></td>
+                      <td>
+                        <button className="btn-cf-outline" onClick={() => openSRProblem(p.id)} style={{ padding: '4px 8px', fontSize: '11px' }}>REVIEW</button>
+                      </td>
+                    </tr>
+                  ))}
+                  {srQueue.length === 0 && (
+                    <tr>
+                      <td colSpan="4" className="text-mono text-muted text-center">No reviews due today.</td>
+                    </tr>
+                  )}
+                </tbody>
+              </table>
             </div>
 
-            <div className="text-micro text-secondary" style={{ marginTop: '24px', marginBottom: '8px' }}>ALL TRACKED SINS ({srAll.length})</div>
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', overflowY: 'auto', flexGrow: 1 }}>
-               {srAll.map(p => (
-                <div key={p.id} style={{ display: 'grid', gridTemplateColumns: '2fr 1fr 1fr 1fr', padding: '12px 16px', borderBottom: '1px solid var(--border-quant-harsh)' }} className="text-mono text-sm text-secondary">
-                  <span className="text-primary">{p.id}</span>
-                  <span>Stage {p.reviewStage}</span>
-                  <span style={{ color: p.failedCount > 0 ? '#ff4444' : 'inherit' }}>Fails: {p.failedCount}</span>
-                  <span>Next: {new Date(p.nextReviewAt).toLocaleDateString()}</span>
-                </div>
-               ))}
+            <div className="text-micro text-secondary" style={{ marginBottom: '8px' }}>ALL TRACKED SINS ({srAll.length})</div>
+            <div className="cf-table-container" style={{ flexGrow: 1, overflowY: 'auto' }}>
+              <table className="cf-table">
+                <thead>
+                  <tr>
+                    <th>Problem ID</th>
+                    <th>Stage</th>
+                    <th>Fails</th>
+                    <th>Next Review</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {srAll.map(p => (
+                    <tr key={p.id}>
+                      <td className="text-mono text-primary">{p.id}</td>
+                      <td className="text-mono text-secondary">{p.reviewStage}</td>
+                      <td className="text-mono" style={{ color: p.failedCount > 0 ? 'var(--icpc-red)' : 'var(--text-muted)' }}>{p.failedCount}</td>
+                      <td className="text-mono text-secondary">{new Date(p.nextReviewAt).toLocaleDateString()}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
             </div>
           </>
         )}
       </div>
     );
   };
-
   const renderCrucible = () => {
     return (
-      <div className="glass-panel-outer" style={{ height: '100%', display: 'flex', flexDirection: 'column', padding: '20px' }}>
+      <div className="cf-card" style={{ height: '100%', display: 'flex', flexDirection: 'column', padding: '20px' }}>
          <h2 className="text-lg text-primary" style={{ marginBottom: '16px', letterSpacing: '-0.02em' }}>
            🧠 The Crucible <span className="text-muted">— Socratic LLM Coach (Nvidia NIM)</span>
          </h2>
          <div style={{ display: 'flex', gap: '16px', marginBottom: '16px' }}>
-            <input className="text-mono text-sm" type="password" placeholder="Nvidia API Key (nvapi-...)" value={coachNvidiaKey} onChange={e => { setCoachNvidiaKey(e.target.value); localStorage.setItem('ag_nvidia_key', e.target.value); }} style={{ flex: 1, padding: '12px', background: 'var(--bg-glass-inner)', border: '1px solid var(--border-quant-harsh)', color: 'var(--text-primary)' }} />
-            <input className="text-mono text-sm" placeholder="Problem ID (e.g. 1920B)" value={coachProblemId} onChange={e => setCoachProblemId(e.target.value)} style={{ width: '150px', padding: '12px', background: 'var(--bg-glass-inner)', border: '1px solid var(--border-quant-harsh)', color: 'var(--text-primary)' }} />
+            <input className="text-mono text-sm" type="password" placeholder="Nvidia API Key (nvapi-...)" value={coachNvidiaKey} onChange={e => { setCoachNvidiaKey(e.target.value); localStorage.setItem('ag_nvidia_key', e.target.value); }} style={{ flex: 1, padding: '12px', background: 'var(--bg-code)', border: '1px solid var(--border)', color: 'var(--text-dark)' }} />
+            <input className="text-mono text-sm" placeholder="Problem ID (e.g. 1920B)" value={coachProblemId} onChange={e => setCoachProblemId(e.target.value)} style={{ width: '150px', padding: '12px', background: 'var(--bg-code)', border: '1px solid var(--border)', color: 'var(--text-dark)' }} />
          </div>
          
          <div style={{ display: 'flex', gap: '20px', flexGrow: 1, overflow: 'hidden' }}>
             {/* Left side: Code & Approach */}
             <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: '12px' }}>
-               <textarea className="text-mono text-sm" placeholder="Paste your current code here..." value={coachCode} onChange={e => setCoachCode(e.target.value)} style={{ flex: 2, background: 'var(--bg-glass-inner)', border: '1px solid var(--border-quant-harsh)', padding: '12px', color: 'var(--accent-green-muted)', resize: 'none' }} />
-               <textarea className="text-mono text-sm" placeholder="Explain your approach (what is failing?)..." value={pfApproach} onChange={e => setPfApproach(e.target.value)} style={{ flex: 1, background: 'var(--bg-glass-inner)', border: '1px solid var(--border-quant-harsh)', padding: '12px', color: 'var(--text-primary)', resize: 'none' }} />
-               <button onClick={getCoachHint} disabled={coachLoading} style={{ padding: '16px', background: 'var(--accent-cyan)', color: '#000', fontWeight: 'bold', border: 'none', borderRadius: '4px', cursor: coachLoading ? 'wait' : 'pointer' }}>
+               <textarea className="text-mono text-sm" placeholder="Paste your current code here..." value={coachCode} onChange={e => setCoachCode(e.target.value)} style={{ flex: 2, background: 'var(--bg-code)', border: '1px solid var(--border)', padding: '12px', color: 'var(--text-dark)', resize: 'none' }} />
+               <textarea className="text-mono text-sm" placeholder="Explain your approach (what is failing?)..." value={pfApproach} onChange={e => setPfApproach(e.target.value)} style={{ flex: 1, background: 'var(--bg-code)', border: '1px solid var(--border)', padding: '12px', color: 'var(--text-dark)', resize: 'none' }} />
+               <button onClick={getCoachHint} disabled={coachLoading} style={{ padding: '16px', background: 'var(--icpc-blue)', color: '#000', fontWeight: 'bold', border: 'none', borderRadius: '4px', cursor: coachLoading ? 'wait' : 'pointer' }}>
                  {coachLoading ? 'ANALYZING...' : `REQUEST HINT LEVEL ${coachHintLevel}/3`}
                </button>
+               
+               {/* Adversarial Edge-Case Engine */}
+               <div className="cf-card" style={{ padding: '16px', marginTop: 'auto' }}>
+                 <div className="text-micro text-secondary" style={{ marginBottom: '12px' }}>ADVERSARIAL EDGE-CASE ENGINE (Red Team)</div>
+                 <textarea className="text-mono text-sm" placeholder="Define your absolute worst-case adversarial input here..." value={advWorstCase} onChange={e => setAdvWorstCase(e.target.value)} style={{ width: '100%', background: 'var(--bg-code)', border: '1px solid var(--border)', padding: '10px', color: 'var(--text-dark)', resize: 'none', height: '60px', marginBottom: '12px' }} />
+                 <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px', marginBottom: '12px' }}>
+                   <label style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '13px', cursor: 'pointer' }}><input type="checkbox" checked={advStarGraph} onChange={e => setAdvStarGraph(e.target.checked)} /> Star Graph (Max Degree)</label>
+                   <label style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '13px', cursor: 'pointer' }}><input type="checkbox" checked={advBamboo} onChange={e => setAdvBamboo(e.target.checked)} /> Bamboo / Line Graph</label>
+                   <label style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '13px', cursor: 'pointer' }}><input type="checkbox" checked={advDisconnected} onChange={e => setAdvDisconnected(e.target.checked)} /> Disconnected Components</label>
+                   <label style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '13px', cursor: 'pointer' }}><input type="checkbox" checked={advEmpty} onChange={e => setAdvEmpty(e.target.checked)} /> N=1 / Empty Constraints</label>
+                 </div>
+                 <button disabled={!advStarGraph || !advBamboo || !advDisconnected || !advEmpty || !advWorstCase.trim()} style={{ width: '100%', padding: '10px', background: (!advStarGraph || !advBamboo || !advDisconnected || !advEmpty || !advWorstCase.trim()) ? 'var(--bg-code)' : 'var(--icpc-red)', color: (!advStarGraph || !advBamboo || !advDisconnected || !advEmpty || !advWorstCase.trim()) ? 'var(--text-muted)' : 'white', fontWeight: 'bold', border: '1px solid var(--border)', borderRadius: '4px', cursor: (!advStarGraph || !advBamboo || !advDisconnected || !advEmpty || !advWorstCase.trim()) ? 'not-allowed' : 'pointer' }}>
+                   {(!advStarGraph || !advBamboo || !advDisconnected || !advEmpty || !advWorstCase.trim()) ? 'COMPLETE ADVERSARIAL REVIEW TO UNLOCK SUBMIT' : '✓ ADVERSARIAL REVIEW PASSED — SUBMIT TO CF'}
+                 </button>
+               </div>
             </div>
             
             {/* Right side: Transcripts & Weakness Profile */}
             <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: '16px', overflowY: 'auto' }}>
-               <div className="glass-panel-outer" style={{ padding: '16px' }}>
+               <div className="cf-card" style={{ padding: '16px' }}>
                   <div style={{ display: 'flex', justifyContent: 'space-between' }}>
                     <div className="text-micro text-secondary">SOCRATIC TERMINAL</div>
-                    <button onClick={loadWeaknessProfile} style={{ background: 'none', border: 'none', color: 'var(--accent-cyan)', cursor: 'pointer' }} className="text-mono text-micro">ANALYZE WEAKNESSES</button>
+                    <button onClick={loadWeaknessProfile} style={{ background: 'none', border: 'none', color: 'var(--icpc-blue)', cursor: 'pointer' }} className="text-mono text-micro">ANALYZE WEAKNESSES</button>
                   </div>
                   <div style={{ marginTop: '16px', display: 'flex', flexDirection: 'column', gap: '12px' }}>
                      {coachHints.map((h, i) => (
@@ -915,10 +1141,10 @@ function App() {
                </div>
 
                {coachWeakness && (
-                 <div className="glass-panel-outer" style={{ padding: '16px' }}>
+                 <div className="cf-card" style={{ padding: '16px' }}>
                     <div className="text-micro text-secondary" style={{ marginBottom: '12px' }}>WEAKNESS PRESCRIPTION ({coachWeakness.totalSessions} sessions)</div>
                     {coachWeakness.profile.slice(0, 5).map(w => (
-                      <div key={w.tag} style={{ display: 'flex', justifyContent: 'space-between', padding: '8px 0', borderBottom: '1px solid var(--border-quant-harsh)' }} className="text-mono text-sm text-primary">
+                      <div key={w.tag} style={{ display: 'flex', justifyContent: 'space-between', padding: '8px 0', borderBottom: '1px solid var(--border)' }} className="text-mono text-sm text-primary">
                         <span>{w.tag}</span>
                         <span style={{ color: w.hintRate > 0.5 ? '#ff4444' : 'inherit' }}>Hint Rate: {Math.round(w.hintRate * 100)}%</span>
                       </div>
@@ -933,132 +1159,97 @@ function App() {
 
 
   const renderGoldenPath = () => {
-    // Generate 20 mock problems to ensure high data density
-    const mockProblems = Array.from({ length: 20 }, (_, i) => {
-      const id = `${1900 - i}${['A', 'B', 'C', 'D', 'E', 'F'][i % 6]}`;
-      const name = ['Scuza', 'Copil Copac Draws Trees', 'LuoTianyi and the Show', 'Forever Winter', 'The Human Equation', 'Counting Rhyme'][i % 6];
-      const rating = 1600 + (i % 5) * 100;
-      const overlap = 95 - i * 2; // Decreasing overlap
-      const attempts = (1.1 + (i % 4) * 0.4).toFixed(1);
-      const isTrap = overlap > 70 && attempts >= 1.8;
-      return { id: `${id} - ${name}`, rating, overlap, attempts, isTrap };
-    });
+    // Use real recommendations from backend
+    const problems = goldenProblems;
+
+    const loadGolden = async () => {
+      if (goldenLoading) return;
+      setGoldenLoading(true);
+      try {
+        const r = await fetch(`${BACKEND}/api/recommend/${cfHandle}?count=20`);
+        const d = await r.json();
+        if (Array.isArray(d)) setGoldenProblems(d);
+      } catch { }
+      setGoldenLoading(false);
+    };
 
     return (
-      <div className="glass-panel-outer" style={{ height: '100%', display: 'flex', flexDirection: 'column', padding: '20px' }}>
-        {/* Header & Filters */}
-        <div style={{ marginBottom: '16px' }}>
-          <h2 className="text-lg text-primary" style={{ marginBottom: '12px', letterSpacing: '-0.02em' }}>
-            The Golden Path: <span className="text-muted">Ascension Cohort Intersection</span>
-          </h2>
-          <div style={{ display: 'flex', gap: '12px' }}>
-            {['Target Cohort: Newly Promoted Masters (2100+)', 'Timeframe: 6 Months Pre-Promotion', 'Problem Tags: All'].map(filter => (
-              <div key={filter} className="text-sm text-secondary" style={{ 
-                padding: '6px 12px', 
-                background: 'rgba(255,255,255,0.03)', 
-                border: '1px solid rgba(255,255,255,0.08)', 
-                borderRadius: 'var(--radius-inner)',
-                backdropFilter: 'blur(10px)',
-                cursor: 'pointer'
-              }}>
-                {filter} <span style={{ fontSize: '10px', marginLeft: '4px' }}>â–¼</span>
-              </div>
-            ))}
+      <div className="cf-card" style={{ height: '100%', display: 'flex', flexDirection: 'column', padding: '20px' }}>
+        {/* Header & Load */}
+        <div style={{ marginBottom: '16px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+          <div>
+            <h2 className="text-lg text-primary" style={{ marginBottom: '4px', letterSpacing: '-0.02em' }}>
+              The Golden Path: <span className="text-muted">Personalized Recommendations</span>
+            </h2>
+            <div className="text-micro text-secondary">Problems chosen from your weak tags, rated just above your current level</div>
           </div>
+          <button className="btn btn-primary" onClick={loadGolden} disabled={goldenLoading}
+            style={{ fontSize: '11px', padding: '8px 16px', whiteSpace: 'nowrap' }}>
+            {goldenLoading ? '⏳ Loading...' : '⚡ Load Problems'}
+          </button>
         </div>
 
-        {/* High-Density Intersection Data Table */}
-        <div style={{ 
-          flexGrow: 1, 
-          background: 'rgba(10, 10, 12, 0.4)', 
-          borderRadius: 'var(--radius-inner)',
-          border: '1px solid rgba(255, 255, 255, 0.05)',
-          overflow: 'hidden',
-          display: 'flex',
-          flexDirection: 'column'
-        }}>
-          {/* Table Header */}
-          <div style={{ 
-            display: 'grid', 
-            gridTemplateColumns: '2fr 80px 2fr 100px 40px', 
-            padding: '8px 16px', 
-            background: 'rgba(255,255,255,0.02)',
-            borderBottom: '1px solid rgba(255,255,255,0.08)'
-          }} className="text-micro text-secondary">
-            <span>PROBLEM ID / NAME</span>
-            <span>RATING</span>
-            <span>COHORT OVERLAP</span>
-            <span>AVG ATTEMPTS</span>
-            <span></span>
-          </div>
-          
-          {/* Table Body (Scrollable) */}
-          <div style={{ overflowY: 'auto', flexGrow: 1 }}>
-            {mockProblems.map((prob, idx) => (
-              <div key={idx} style={{ 
-                display: 'grid', 
-                gridTemplateColumns: '2fr 80px 2fr 100px 40px', 
-                padding: '4px 16px', // Extremely tight padding for density
-                borderBottom: '1px solid rgba(255, 255, 255, 0.03)',
-                alignItems: 'center'
-              }} className="text-mono text-sm">
-                
-                <span className="text-primary" style={{ whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', paddingRight: '12px' }}>
-                  {prob.id}
-                </span>
-                
-                <span className="text-cyan">{prob.rating}</span>
-                
-                <div style={{ display: 'flex', alignItems: 'center', gap: '8px', paddingRight: '16px' }}>
-                  <span style={{ width: '32px', textAlign: 'right' }}>{prob.overlap}%</span>
-                  <div style={{ flexGrow: 1, height: '4px', background: 'rgba(255,255,255,0.1)', borderRadius: '2px' }}>
-                    <div style={{ width: `${prob.overlap}%`, height: '100%', background: 'var(--accent-blue)', borderRadius: '2px' }}></div>
-                  </div>
-                </div>
-                
-                <span style={{ color: prob.attempts >= 1.8 ? 'var(--accent-orange-muted)' : 'var(--text-secondary)' }}>
-                  {prob.attempts}
-                </span>
-                
-                {/* Trapdoor Indicator */}
-                <div style={{ display: 'flex', justifyContent: 'center' }}>
-                  {prob.isTrap && (
-                    <div title="Trapdoor: High Overlap, High Friction" style={{ 
-                      width: '8px', 
-                      height: '8px', 
-                      borderRadius: '50%', 
-                      background: 'var(--accent-orange-muted)',
-                      boxShadow: '0 0 8px var(--accent-orange-muted)'
-                    }}></div>
-                  )}
-                </div>
-
-              </div>
-            ))}
-          </div>
+        {/* Problems Table */}
+        <div className="cf-table-container" style={{ flexGrow: 1, overflowY: 'auto' }}>
+          {problems.length === 0 ? (
+            <div style={{ padding: '60px', textAlign: 'center', color: 'var(--text-muted)' }}>
+              <div style={{ fontSize: '36px', marginBottom: '12px' }}>✨</div>
+              <p className="text-mono text-sm">Click "Load Problems" to get personalized recommendations based on your CF handle and weak topics.</p>
+            </div>
+          ) : (
+          <table className="cf-table">
+            <thead>
+              <tr>
+                <th>PROBLEM ID / NAME</th>
+                <th>RATING</th>
+                <th>COHORT OVERLAP</th>
+                <th>AVG ATTEMPTS</th>
+                <th></th>
+              </tr>
+            </thead>
+            <tbody>
+              {problems.map((prob, idx) => (
+                <tr key={idx}>
+                  <td className="text-mono text-primary">
+                    <a href={`https://codeforces.com/problemset/problem/${prob.contestId}/${prob.index}`}
+                      target="_blank" rel="noreferrer"
+                      style={{ color: 'var(--icpc-blue)', textDecoration: 'none' }}>
+                      {prob.contestId}{prob.index} — {prob.name}
+                    </a>
+                  </td>
+                  <td className="text-mono" style={{ color: getCfColor(prob.rating || 0) }}>{prob.rating || '—'}</td>
+                  <td>
+                    <div style={{ display: 'flex', flexWrap: 'wrap', gap: '4px' }}>
+                      {(prob.tags || []).slice(0, 3).map(t => (
+                        <span key={t} className="tag-badge" style={{ fontSize: '9px', padding: '2px 6px' }}>{t}</span>
+                      ))}
+                    </div>
+                  </td>
+                  <td>
+                    <a href={`https://codeforces.com/problemset/problem/${prob.contestId}/${prob.index}`}
+                      target="_blank" rel="noreferrer" className="btn btn-ghost btn-sm"
+                      style={{ fontSize: '10px', padding: '3px 10px' }}>Solve →</a>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+          )}
         </div>
       </div>
     );
   };
-
   const renderCodeExplorer = () => {
-    // Grandmaster Global Analytics Data (Fallback to static if not dynamically loaded yet)
-    const stats = gmCoachData ? gmCoachData.gmStats : {
-      analyzedGms: ['tourist', 'jiangly', 'Benq', 'Radewoosh', 'Petr'],
-      avgSolved: 6245,
-      maxSolved: 12840,
-      avgDifficulty: 2540,
-      avgAttempts: 1.42,
-      avgTime2400: '18m 45s',
-      cadence: '3.2 ACs / day',
-      tags: [
-        { name: 'dp', value: 18 },
-        { name: 'math', value: 14 },
-        { name: 'data structures', value: 12 },
-        { name: 'graphs', value: 11 }
-      ]
-    };
-
+    // Show a loading/empty state instead of fake static data if gmCoachData isn't loaded yet.
+    if (!gmCoachData) {
+      return (
+        <div style={{ padding: '60px', textAlign: 'center', color: 'var(--text-muted)' }}>
+          <div style={{ fontSize: '36px', marginBottom: '12px' }}>⏳</div>
+          <p className="text-mono text-sm">Loading GM global analytics...</p>
+        </div>
+      );
+    }
+    const stats = gmCoachData.gmStats;
     const handleSearch = async () => {
       setIsSearching(true);
       setSolutions([]); // clear current
@@ -1200,9 +1391,9 @@ function App() {
             onClick={handleLoadDynamicCoach} 
             disabled={gmCoachLoading}
             style={{ 
-              background: gmCoachLoading ? 'var(--bg-glass-inner)' : 'var(--accent-cyan)', 
+              background: gmCoachLoading ? 'var(--bg-code)' : 'var(--icpc-blue)', 
               color: gmCoachLoading ? 'var(--text-muted)' : '#000', 
-              border: '1px solid var(--accent-cyan)', 
+              border: '1px solid var(--icpc-blue)', 
               borderRadius: '8px', padding: '6px 14px', cursor: gmCoachLoading ? 'default' : 'pointer', fontWeight: 'bold' 
             }} 
             className="text-mono text-micro"
@@ -1212,31 +1403,31 @@ function App() {
         </div>
 
         {gmCoachStatus && gmCoachLoading && (
-           <div className="text-mono text-sm text-cyan text-center" style={{ margin: '10px 0' }}>{gmCoachStatus}</div>
+           <div className="text-mono text-sm text-primary text-center" style={{ margin: '10px 0' }}>{gmCoachStatus}</div>
         )}
         
         {/* Deep Analytics Dashboard */}
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '16px', flexShrink: 0 }}>
           
           {/* Global GM Averages */}
-          <div className="glass-panel-outer" style={{ padding: '20px' }}>
+          <div className="cf-card" style={{ padding: '20px' }}>
             <h3 className="text-micro text-muted" style={{ marginBottom: '16px' }}>DYNAMIC GM AGGREGATES ({stats.analyzedGms?.length || 5} ELITES)</h3>
             <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', borderBottom: '1px solid rgba(255,255,255,0.04)', paddingBottom: '8px' }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', borderBottom: '1px solid var(--bg-page)', paddingBottom: '8px' }}>
                 <span className="text-micro text-secondary">AVERAGE SOLVED</span>
-                <span className="text-mono text-lg text-cyan">{stats.avgSolved}</span>
+                <span className="text-mono text-lg text-primary">{stats.avgSolved}</span>
               </div>
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', borderBottom: '1px solid rgba(255,255,255,0.04)', paddingBottom: '8px' }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', borderBottom: '1px solid var(--bg-page)', paddingBottom: '8px' }}>
                 <span className="text-micro text-secondary">MAX SOLVED (RECORD)</span>
                 <span className="text-mono text-lg text-primary">{stats.maxSolved}</span>
               </div>
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', borderBottom: '1px solid rgba(255,255,255,0.04)', paddingBottom: '8px' }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', borderBottom: '1px solid var(--bg-page)', paddingBottom: '8px' }}>
                 <span className="text-micro text-secondary">AVG DIFFICULTY</span>
-                <span className="text-mono text-lg text-red-muted">{stats.avgDifficulty}</span>
+                <span className="text-mono text-lg verdict-wa-muted">{stats.avgDifficulty}</span>
               </div>
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end' }}>
                 <span className="text-micro text-secondary">WA/AC RATIO</span>
-                <span className="text-mono text-lg text-orange-muted">{stats.avgAttempts}</span>
+                <span className="text-mono text-lg verdict-tle-muted">{stats.avgAttempts}</span>
               </div>
             </div>
             {gmCoachData && (
@@ -1247,11 +1438,11 @@ function App() {
           </div>
 
           {/* Coach Analysis / Insights */}
-          <div className="glass-panel-outer" style={{ padding: '20px', display: 'flex', flexDirection: 'column' }}>
+          <div className="cf-card" style={{ padding: '20px', display: 'flex', flexDirection: 'column' }}>
             <h3 className="text-micro text-muted" style={{ marginBottom: '16px' }}>COACH'S TACTICAL INSIGHTS</h3>
             <div style={{ flexGrow: 1, display: 'flex', flexDirection: 'column', gap: '14px', justifyContent: 'center' }}>
-              <p className="text-mono text-sm" style={{ color: 'var(--text-primary)', lineHeight: '1.5' }}>
-                "To reach Grandmaster, volume alone is insufficient. Elite GMs currently average <span className="text-cyan">{stats.cadence}</span>, but their average problem difficulty is <span style={{ color: 'var(--accent-red-muted)' }}>{stats.avgDifficulty}</span>."
+              <p className="text-mono text-sm" style={{ color: 'var(--text-dark)', lineHeight: '1.5' }}>
+                "To reach Grandmaster, volume alone is insufficient. Elite GMs currently average <span className="text-primary">{stats.cadence}</span>, but their average problem difficulty is <span style={{ color: 'var(--accent-red-muted)' }}>{stats.avgDifficulty}</span>."
               </p>
               <div style={{ background: 'rgba(255,69,58,0.05)', borderLeft: '2px solid var(--accent-red-muted)', padding: '10px 14px' }}>
                 <p className="text-mono text-micro text-secondary">
@@ -1268,17 +1459,17 @@ function App() {
           </div>
 
           {/* Tag Archetype */}
-          <div className="glass-panel-outer" style={{ padding: '20px' }}>
+          <div className="cf-card" style={{ padding: '20px' }}>
             <h3 className="text-micro text-muted" style={{ marginBottom: '16px' }}>DYNAMIC GM TAG ARCHETYPE</h3>
             <div style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
               {stats.tags.map((tag, i) => (
                 <div key={i}>
                   <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '6px' }}>
                     <span className="text-mono text-micro text-secondary text-uppercase">{tag.name}</span>
-                    <span className="text-mono text-micro text-cyan">{tag.value}%</span>
+                    <span className="text-mono text-micro text-muted">{tag.value}%</span>
                   </div>
-                  <div style={{ width: '100%', height: '4px', background: 'var(--bg-glass-inner)', borderRadius: '2px' }}>
-                    <div style={{ width: `${tag.value * 4}%`, height: '100%', background: 'var(--accent-blue)', borderRadius: '2px' }}></div>
+                  <div style={{ width: '100%', height: '4px', background: 'var(--bg-code)', borderRadius: '2px' }}>
+                    <div style={{ width: `${tag.value * 4}%`, height: '100%', background: 'var(--icpc-blue)', borderRadius: '2px' }}></div>
                   </div>
                 </div>
               ))}
@@ -1291,7 +1482,7 @@ function App() {
         </div>
 
         {/* Code Explorer Tool */}
-        <div className="glass-panel-outer" style={{ flexGrow: 1, display: 'flex', flexDirection: 'column', padding: '20px' }}>
+        <div className="cf-card" style={{ flexGrow: 1, display: 'flex', flexDirection: 'column', padding: '20px' }}>
           <h3 className="text-micro text-muted" style={{ marginBottom: '16px' }}>GM SOLUTION SEARCH ENGINE</h3>
           <div style={{ display: 'flex', gap: '16px', marginBottom: '20px' }}>
           <input 
@@ -1300,8 +1491,8 @@ function App() {
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
             style={{
-              background: 'var(--bg-glass-inner)', border: '1px solid var(--border-quant-harsh)', borderRadius: 'var(--radius-inner)',
-              padding: '12px 16px', color: 'var(--text-primary)', outline: 'none', width: '240px'
+              background: 'var(--bg-code)', border: '1px solid var(--border)', borderRadius: 'var(--radius-inner)',
+              padding: '12px 16px', color: 'var(--text-dark)', outline: 'none', width: '240px'
             }} 
             className="text-mono" 
           />
@@ -1310,8 +1501,8 @@ function App() {
             value={rankFilter}
             onChange={(e) => setRankFilter(e.target.value)}
             style={{
-              background: 'var(--bg-glass-inner)', border: '1px solid var(--border-quant-harsh)', borderRadius: 'var(--radius-inner)',
-              padding: '12px 16px', color: 'var(--text-primary)', outline: 'none', cursor: 'pointer', appearance: 'none'
+              background: 'var(--bg-code)', border: '1px solid var(--border)', borderRadius: 'var(--radius-inner)',
+              padding: '12px 16px', color: 'var(--text-dark)', outline: 'none', cursor: 'pointer', appearance: 'none'
             }}
             className="text-mono text-sm"
           >
@@ -1325,9 +1516,9 @@ function App() {
           <button 
             onClick={handleSearch}
             style={{
-              background: isSearching ? 'var(--bg-glass-inner)' : 'var(--accent-cyan)', 
+              background: isSearching ? 'var(--bg-code)' : 'var(--icpc-blue)', 
               color: isSearching ? 'var(--text-muted)' : '#000', 
-              border: '1px solid var(--accent-cyan)', 
+              border: '1px solid var(--icpc-blue)', 
               borderRadius: 'var(--radius-inner)', padding: '0 24px',
               cursor: isSearching ? 'default' : 'pointer', fontWeight: 'bold', transition: 'all 0.2s'
             }}>
@@ -1335,11 +1526,11 @@ function App() {
           </button>
         </div>
 
-        <div className="quant-table-container" style={{ flexGrow: 1, display: 'flex', flexDirection: 'column' }}>
-          <div style={{ display: 'grid', gridTemplateColumns: '150px 200px 1fr 100px 100px', padding: '12px 16px', background: 'var(--bg-glass-inner)', borderBottom: '1px solid var(--border-quant-harsh)', borderRadius: '8px 8px 0 0' }} className="text-micro text-secondary">
+        <div className="cf-table-container" style={{ flexGrow: 1, display: 'flex', flexDirection: 'column' }}>
+          <div style={{ display: 'grid', gridTemplateColumns: '150px 200px 1fr 100px 100px', padding: '12px 16px', background: 'var(--bg-code)', borderBottom: '1px solid var(--border)', borderRadius: '8px 8px 0 0' }} className="text-micro text-secondary">
             <span>HANDLE</span><span>RANK</span><span>LANGUAGE</span><span>TIME</span><span>MEM</span>
           </div>
-          <div style={{ overflowY: 'auto', flexGrow: 1, background: 'rgba(0,0,0,0.2)', borderRadius: '0 0 8px 8px', border: '1px solid rgba(255,255,255,0.03)', borderTop: 'none' }}>
+          <div style={{ overflowY: 'auto', flexGrow: 1, background: 'var(--bg-page)', borderRadius: '0 0 8px 8px', border: '1px solid rgba(255,255,255,0.03)', borderTop: 'none' }}>
             {isSearching ? (
                <div className="text-mono text-sm text-muted text-center" style={{ padding: '40px' }}>Querying Codeforces API live...</div>
             ) : displayedSolutions.map((sol, idx) => (
@@ -1349,12 +1540,12 @@ function App() {
                 <span className="text-primary">{sol.handle}</span>
                 <span style={{ 
                     color: sol.rank.includes('grandmaster') ? 'var(--accent-red-muted)' : 
-                           sol.rank.includes('master') ? 'var(--accent-orange-muted)' : 
-                           sol.rank.includes('expert') ? 'var(--accent-blue)' : 'var(--text-secondary)',
+                           sol.rank.includes('master') ? 'var(--cf-tle-orange)' : 
+                           sol.rank.includes('expert') ? 'var(--icpc-blue)' : 'var(--text-muted)',
                     textTransform: 'capitalize'
                 }}>{sol.rank}</span>
                 <span className="text-muted">{sol.lang}</span>
-                <span className="text-cyan">{sol.time}</span>
+                <span className="text-primary">{sol.time}</span>
                 <span className="text-muted">{sol.mem}</span>
               </div>
             ))}
@@ -1378,7 +1569,7 @@ function App() {
 h1{color:#00d4aa;border-bottom:1px solid #333;padding-bottom:16px}h2{color:#888;font-size:14px;margin-top:32px}
 .metric{display:flex;justify-content:space-between;padding:8px 0;border-bottom:1px solid #1a1a1a}
 .val{color:#00d4aa;font-weight:bold}.warn{color:#ff6b6b}</style></head><body>
-<h1>â—† Competitive Programming Performance Tear Sheet</h1>
+<h1>◆ Competitive Programming Performance Tear Sheet</h1>
 <p style="color:#666">Generated ${new Date().toISOString().split('T')[0]} | Handle: ${cfHandle}</p>
 <h2>EXECUTION METRICS</h2>
 <div class="metric"><span>Inter-Submission Cadence</span><span class="val">14.2 min avg</span></div>
@@ -1403,7 +1594,7 @@ h1{color:#00d4aa;border-bottom:1px solid #333;padding-bottom:16px}h2{color:#888;
     a.click();
   };
 
-  // â”€â”€ Foundry Intelligence State â”€â”€
+  // ── Foundry Intelligence State ──
   const [foundryTarget, setFoundryTarget] = useState('grandmaster');
   const [foundryData, setFoundryData] = useState(null);
   const [foundryStatus, setFoundryStatus] = useState('');
@@ -1459,18 +1650,18 @@ h1{color:#00d4aa;border-bottom:1px solid #333;padding-bottom:16px}h2{color:#888;
     return (
       <div style={{ height: '100%', display: 'flex', flexDirection: 'column', gap: '14px', overflow: 'auto', padding: '4px' }}>
         {/* Header Bar */}
-        <div className="glass-panel-outer" style={{ padding: '14px 24px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexShrink: 0 }}>
+        <div className="cf-card" style={{ padding: '14px 24px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexShrink: 0 }}>
           <div>
-            <h2 className="text-lg text-primary" style={{ letterSpacing: '-0.02em', margin: 0 }}>â—† Foundry <span className="text-muted">Intelligence Hub</span></h2>
+            <h2 className="text-lg text-primary" style={{ letterSpacing: '-0.02em', margin: 0 }}>◆ Foundry <span className="text-muted">Intelligence Hub</span></h2>
             <p className="text-micro text-secondary" style={{ marginTop: '4px' }}>
               {u ? `${u.handle} (${u.rating}) vs ${co?.size || 0} recently promoted ${rankMeta.label}s` : `Analyzing ${cfHandle} against live ${rankMeta.label} cohort`}
             </p>
           </div>
           <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-            <button onClick={runFoundrySync} disabled={foundryLoading} style={{ background: foundryLoading ? 'var(--bg-glass-inner)' : 'var(--accent-cyan)', color: foundryLoading ? 'var(--text-muted)' : '#000', border: '1px solid var(--accent-cyan)', borderRadius: '8px', padding: '8px 18px', cursor: foundryLoading ? 'default' : 'pointer', fontWeight: 'bold' }} className="text-mono text-sm">
-              {foundryLoading ? 'â³ SYNCING...' : 'âŸ³ SYNC LIVE'}
+            <button onClick={runFoundrySync} disabled={foundryLoading} style={{ background: foundryLoading ? 'var(--bg-code)' : 'var(--icpc-blue)', color: foundryLoading ? 'var(--text-muted)' : '#000', border: '1px solid var(--icpc-blue)', borderRadius: '8px', padding: '8px 18px', cursor: foundryLoading ? 'default' : 'pointer', fontWeight: 'bold' }} className="text-mono text-sm">
+              {foundryLoading ? '⏳ SYNCING...' : '⟳ SYNC LIVE'}
             </button>
-            <button onClick={() => setGoalEditing(!goalEditing)} style={{ background: 'none', border: `1px solid ${rankMeta.color}`, color: rankMeta.color, borderRadius: '8px', padding: '8px 18px', cursor: 'pointer' }} className="text-mono text-sm">âš™ GOALS</button>
+            <button onClick={() => setGoalEditing(!goalEditing)} style={{ background: 'none', border: `1px solid ${rankMeta.color}`, color: rankMeta.color, borderRadius: '8px', padding: '8px 18px', cursor: 'pointer' }} className="text-mono text-sm">⚙ GOALS</button>
             <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
               <div style={{ width: '7px', height: '7px', borderRadius: '50%', background: fd ? '#30d158' : '#ff6b6b', boxShadow: `0 0 8px ${fd ? '#30d158' : '#ff6b6b'}`, animation: 'pulse 2s infinite' }}></div>
               <span className="text-micro text-secondary">{fd ? 'LIVE' : 'OFFLINE'}</span>
@@ -1481,48 +1672,48 @@ h1{color:#00d4aa;border-bottom:1px solid #333;padding-bottom:16px}h2{color:#888;
         {/* Rank Toggle */}
         <div style={{ display: 'flex', gap: '8px', flexShrink: 0 }}>
           {Object.entries(RANK_META).map(([key, meta]) => (
-            <button key={key} onClick={() => setFoundryTarget(key)} style={{ padding: '7px 18px', borderRadius: '8px', border: `1px solid ${foundryTarget === key ? meta.color : 'rgba(255,255,255,0.08)'}`, background: foundryTarget === key ? `${meta.color}22` : 'none', color: foundryTarget === key ? meta.color : 'var(--text-secondary)', cursor: 'pointer', fontSize: '11px', fontWeight: 'bold', fontFamily: 'var(--font-mono)', transition: 'all 0.2s' }}>{meta.short}</button>
+            <button key={key} onClick={() => setFoundryTarget(key)} style={{ padding: '7px 18px', borderRadius: '8px', border: `1px solid ${foundryTarget === key ? meta.color : 'var(--border)'}`, background: foundryTarget === key ? `${meta.color}22` : 'none', color: foundryTarget === key ? meta.color : 'var(--text-muted)', cursor: 'pointer', fontSize: '11px', fontWeight: 'bold', fontFamily: 'var(--font-mono)', transition: 'all 0.2s' }}>{meta.short}</button>
           ))}
           <div style={{ marginLeft: 'auto', display: 'flex', alignItems: 'center', gap: '8px' }}>
-            {goals.sprintStart && <span className="text-mono text-micro" style={{ color: 'var(--accent-cyan)' }}>SPRINT DAY {sprintDay}/{goals.sprintDays || 50}</span>}
+            {goals.sprintStart && <span className="text-mono text-micro" style={{ color: 'var(--icpc-blue)' }}>SPRINT DAY {sprintDay}/{goals.sprintDays || 50}</span>}
             <span className="text-mono text-micro" style={{ color: rankMeta.color }}>TARGET: {rankMeta.label.toUpperCase()}</span>
           </div>
         </div>
 
         {/* Goal Editor */}
         {goalEditing && (
-          <div className="glass-panel-outer" style={{ padding: '16px', flexShrink: 0 }}>
+          <div className="cf-card" style={{ padding: '16px', flexShrink: 0 }}>
             <h3 className="text-micro text-muted" style={{ marginBottom: '12px' }}>SET GOALS & SPRINT</h3>
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr 2fr', gap: '10px', marginBottom: '12px' }}>
               <div>
                 <label className="text-micro text-secondary">Target Rating</label>
-                <input type="number" value={goalDraft.targetRating} onChange={e => setGoalDraft(p => ({ ...p, targetRating: e.target.value }))} style={{ width: '100%', background: 'var(--bg-glass-inner)', border: '1px solid var(--border-quant-harsh)', borderRadius: '6px', padding: '8px', color: 'var(--text-primary)', marginTop: '4px' }} className="text-mono text-sm" />
+                <input type="number" value={goalDraft.targetRating} onChange={e => setGoalDraft(p => ({ ...p, targetRating: e.target.value }))} style={{ width: '100%', background: 'var(--bg-code)', border: '1px solid var(--border)', borderRadius: '6px', padding: '8px', color: 'var(--text-dark)', marginTop: '4px' }} className="text-mono text-sm" />
               </div>
               <div>
                 <label className="text-micro text-secondary">Daily Quota</label>
-                <input type="number" value={goalDraft.dailyQuota} onChange={e => setGoalDraft(p => ({ ...p, dailyQuota: e.target.value }))} style={{ width: '100%', background: 'var(--bg-glass-inner)', border: '1px solid var(--border-quant-harsh)', borderRadius: '6px', padding: '8px', color: 'var(--text-primary)', marginTop: '4px' }} className="text-mono text-sm" />
+                <input type="number" value={goalDraft.dailyQuota} onChange={e => setGoalDraft(p => ({ ...p, dailyQuota: e.target.value }))} style={{ width: '100%', background: 'var(--bg-code)', border: '1px solid var(--border)', borderRadius: '6px', padding: '8px', color: 'var(--text-dark)', marginTop: '4px' }} className="text-mono text-sm" />
               </div>
               <div>
                 <label className="text-micro text-secondary">Sprint Days</label>
-                <input type="number" value={goalDraft.sprintDays} onChange={e => setGoalDraft(p => ({ ...p, sprintDays: e.target.value }))} style={{ width: '100%', background: 'var(--bg-glass-inner)', border: '1px solid var(--border-quant-harsh)', borderRadius: '6px', padding: '8px', color: 'var(--text-primary)', marginTop: '4px' }} className="text-mono text-sm" />
+                <input type="number" value={goalDraft.sprintDays} onChange={e => setGoalDraft(p => ({ ...p, sprintDays: e.target.value }))} style={{ width: '100%', background: 'var(--bg-code)', border: '1px solid var(--border)', borderRadius: '6px', padding: '8px', color: 'var(--text-dark)', marginTop: '4px' }} className="text-mono text-sm" />
               </div>
               <div>
                 <label className="text-micro text-secondary">Focus Tags (comma-sep)</label>
-                <input value={goalDraft.focusTags} onChange={e => setGoalDraft(p => ({ ...p, focusTags: e.target.value }))} placeholder="dp, math, graphs" style={{ width: '100%', background: 'var(--bg-glass-inner)', border: '1px solid var(--border-quant-harsh)', borderRadius: '6px', padding: '8px', color: 'var(--text-primary)', marginTop: '4px' }} className="text-mono text-sm" />
+                <input value={goalDraft.focusTags} onChange={e => setGoalDraft(p => ({ ...p, focusTags: e.target.value }))} placeholder="dp, math, graphs" style={{ width: '100%', background: 'var(--bg-code)', border: '1px solid var(--border)', borderRadius: '6px', padding: '8px', color: 'var(--text-dark)', marginTop: '4px' }} className="text-mono text-sm" />
               </div>
             </div>
             <div style={{ display: 'flex', gap: '10px' }}>
-              <button onClick={handleSaveGoals} style={{ background: 'var(--accent-cyan)', color: '#000', border: 'none', borderRadius: '6px', padding: '8px 20px', cursor: 'pointer', fontWeight: 'bold' }} className="text-mono text-sm">SAVE & START SPRINT</button>
-              <button onClick={() => { const g = { ...goals, sprintStart: Math.floor(Date.now() / 1000) }; saveGoals(g); setGoals(g); }} style={{ background: 'none', border: '1px solid var(--accent-orange-muted)', color: 'var(--accent-orange-muted)', borderRadius: '6px', padding: '8px 20px', cursor: 'pointer' }} className="text-mono text-sm">RESET SPRINT</button>
+              <button onClick={handleSaveGoals} style={{ background: 'var(--icpc-blue)', color: '#000', border: 'none', borderRadius: '6px', padding: '8px 20px', cursor: 'pointer', fontWeight: 'bold' }} className="text-mono text-sm">SAVE & START SPRINT</button>
+              <button onClick={() => { const g = { ...goals, sprintStart: Math.floor(Date.now() / 1000) }; saveGoals(g); setGoals(g); }} style={{ background: 'none', border: '1px solid var(--cf-tle-orange)', color: 'var(--cf-tle-orange)', borderRadius: '6px', padding: '8px 20px', cursor: 'pointer' }} className="text-mono text-sm">RESET SPRINT</button>
             </div>
           </div>
         )}
 
         {/* Loading / Status */}
         {foundryLoading && (
-          <div className="glass-panel-outer" style={{ padding: '40px', textAlign: 'center', flexShrink: 0 }}>
-            <div className="text-mono text-primary" style={{ marginBottom: '8px' }}>â³ {foundryStatus}</div>
-            <div style={{ width: '200px', height: '3px', background: 'var(--bg-glass-inner)', borderRadius: '2px', margin: '0 auto', overflow: 'hidden' }}>
+          <div className="cf-card" style={{ padding: '40px', textAlign: 'center', flexShrink: 0 }}>
+            <div className="text-mono text-primary" style={{ marginBottom: '8px' }}>⏳ {foundryStatus}</div>
+            <div style={{ width: '200px', height: '3px', background: 'var(--bg-code)', borderRadius: '2px', margin: '0 auto', overflow: 'hidden' }}>
               <div style={{ width: '60%', height: '100%', background: rankMeta.color, animation: 'pulse 1.5s infinite' }}></div>
             </div>
           </div>
@@ -1530,52 +1721,52 @@ h1{color:#00d4aa;border-bottom:1px solid #333;padding-bottom:16px}h2{color:#888;
 
         {/* No data yet */}
         {!fd && !foundryLoading && (
-          <div className="glass-panel-outer" style={{ padding: '60px', textAlign: 'center' }}>
-            <p className="text-mono text-muted">Click <span style={{ color: 'var(--accent-cyan)' }}>SYNC LIVE</span> to analyze <span className="text-primary">{cfHandle}</span> against real, recently-promoted {rankMeta.label}s from Codeforces.</p>
-            <p className="text-micro text-secondary" style={{ marginTop: '8px' }}>This fetches live data from the CF API â€” no hardcoded numbers.</p>
+          <div className="cf-card" style={{ padding: '60px', textAlign: 'center' }}>
+            <p className="text-mono text-muted">Click <span style={{ color: 'var(--icpc-blue)' }}>SYNC LIVE</span> to analyze <span className="text-primary">{cfHandle}</span> against real, recently-promoted {rankMeta.label}s from Codeforces.</p>
+            <p className="text-micro text-secondary" style={{ marginTop: '8px' }}>This fetches live data from the CF API — no hardcoded numbers.</p>
           </div>
         )}
 
-        {/* â”€â”€ LIVE DATA MODULES â”€â”€ */}
+        {/* ── LIVE DATA MODULES ── */}
         {fd && !foundryLoading && (
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '14px', flexGrow: 1 }}>
 
             {/* A: Your Profile vs Cohort Average */}
-            <div className="glass-panel-outer" style={{ padding: '16px' }}>
+            <div className="cf-card" style={{ padding: '16px' }}>
               <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '12px' }}>
                 <h3 className="text-micro text-muted">YOU vs {rankMeta.short} COHORT ({co?.size || 0} users)</h3>
-                <span className="text-mono text-micro" style={{ color: rankMeta.color }}>{u?.rating} â†’ {goals.targetRating || '?'}</span>
+                <span className="text-mono text-micro" style={{ color: rankMeta.color }}>{u?.rating} → {goals.targetRating || '?'}</span>
               </div>
-              <div className="quant-table-container" style={{ padding: '10px' }}>
+              <div className="cf-table-container" style={{ padding: '10px' }}>
                 {[
                   { label: 'TOTAL SOLVED', you: u?.totalSolved, them: co?.avgSolved },
                   { label: 'AVG DIFFICULTY', you: u?.avgDifficulty, them: co?.avgDifficulty },
                   { label: 'CURRENT RATING', you: u?.rating, them: co?.avgRating },
-                  { label: 'VOLUME GAP', you: null, them: null, custom: <span style={{ color: gaps?.volumeGap > 50 ? 'var(--accent-red-muted)' : 'var(--accent-green-muted)' }}>{gaps?.volumeGap || 0} problems behind</span> },
-                  { label: 'DIFFICULTY GAP', you: null, them: null, custom: <span style={{ color: (gaps?.difficultyGap || 0) > 100 ? 'var(--accent-red-muted)' : 'var(--accent-green-muted)' }}>{gaps?.difficultyGap > 0 ? `+${gaps.difficultyGap}` : gaps?.difficultyGap || 0} rating pts</span> },
+                  { label: 'VOLUME GAP', you: null, them: null, custom: <span style={{ color: gaps?.volumeGap > 50 ? 'var(--accent-red-muted)' : 'var(--text-dark)' }}>{gaps?.volumeGap || 0} problems behind</span> },
+                  { label: 'DIFFICULTY GAP', you: null, them: null, custom: <span style={{ color: (gaps?.difficultyGap || 0) > 100 ? 'var(--accent-red-muted)' : 'var(--text-dark)' }}>{gaps?.difficultyGap > 0 ? `+${gaps.difficultyGap}` : gaps?.difficultyGap || 0} rating pts</span> },
                 ].map((r, i) => (
-                  <div key={i} style={{ display: 'flex', justifyContent: 'space-between', padding: '5px 0', borderBottom: '1px solid rgba(255,255,255,0.03)' }} className="text-mono text-sm">
+                  <div key={i} style={{ display: 'flex', justifyContent: 'space-between', padding: '5px 0', borderBottom: '1px solid var(--border)' }} className="text-mono text-sm">
                     <span className="text-secondary">{r.label}</span>
-                    {r.custom || <span><span style={{ color: r.you < r.them ? 'var(--accent-orange-muted)' : 'var(--accent-cyan)' }}>{r.you}</span> <span className="text-micro text-secondary">vs {r.them}</span></span>}
+                    {r.custom || <span><span style={{ color: r.you < r.them ? 'var(--cf-tle-orange)' : 'var(--icpc-blue)' }}>{r.you}</span> <span className="text-micro text-secondary">vs {r.them}</span></span>}
                   </div>
                 ))}
               </div>
             </div>
 
             {/* B: Rising Stars Feed */}
-            <div className="glass-panel-outer" style={{ padding: '16px' }}>
+            <div className="cf-card" style={{ padding: '16px' }}>
               <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '10px' }}>
                 <h3 className="text-micro text-muted">RECENTLY PROMOTED {rankMeta.short}s</h3>
-                <span className="text-mono text-micro text-cyan">LIVE FEED</span>
+                <span className="text-mono text-micro text-muted">LIVE FEED</span>
               </div>
               <div style={{ overflowY: 'auto', maxHeight: '240px' }}>
                 {rising.map((r, i) => (
                   <div key={i} style={{ display: 'flex', justifyContent: 'space-between', padding: '6px 0', borderBottom: '1px solid rgba(255,255,255,0.02)', alignItems: 'center' }} className="text-mono text-sm">
                     <span style={{ color: rankMeta.color, fontWeight: 600 }}>{r.handle}</span>
                     <div style={{ display: 'flex', gap: '6px', alignItems: 'center' }}>
-                      <span className="text-secondary">{r.oldRating}â†’</span>
+                      <span className="text-secondary">{r.oldRating}→</span>
                       <span style={{ color: rankMeta.color }}>{r.newRating}</span>
-                      <span style={{ color: 'var(--accent-green-muted)', fontSize: '10px' }}>+{r.delta}</span>
+                      <span style={{ color: 'var(--text-dark)', fontSize: '10px' }}>+{r.delta}</span>
                     </div>
                   </div>
                 ))}
@@ -1584,30 +1775,30 @@ h1{color:#00d4aa;border-bottom:1px solid #333;padding-bottom:16px}h2{color:#888;
             </div>
 
             {/* C: Difficulty Band Gap (DNA Matrix) */}
-            <div className="glass-panel-outer" style={{ padding: '16px' }}>
-              <h3 className="text-micro text-muted" style={{ marginBottom: '10px' }}>DIFFICULTY DNA â€” VOLUME QUOTA</h3>
+            <div className="cf-card" style={{ padding: '16px' }}>
+              <h3 className="text-micro text-muted" style={{ marginBottom: '10px' }}>DIFFICULTY DNA — VOLUME QUOTA</h3>
               <div style={{ display: 'flex', flexDirection: 'column', gap: '5px' }}>
                 {(gaps?.bucketGaps || []).map((g, i) => (
                   <div key={g.bucket}>
                     <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '2px' }} className="text-mono text-sm">
                       <span className="text-secondary">{g.bucket}</span>
                       <span>
-                        <span style={{ color: g.pct >= 80 ? 'var(--accent-green-muted)' : g.pct >= 50 ? 'var(--accent-orange-muted)' : 'var(--accent-red-muted)' }}>{g.mine}</span>
+                        <span style={{ color: g.pct >= 80 ? 'var(--text-dark)' : g.pct >= 50 ? 'var(--cf-tle-orange)' : 'var(--accent-red-muted)' }}>{g.mine}</span>
                         <span className="text-micro text-secondary"> / {g.target}</span>
                         {g.gap > 0 && <span style={{ color: rankMeta.color, fontSize: '10px' }}> ({g.gap} needed)</span>}
                       </span>
                     </div>
-                    <div style={{ height: '7px', background: 'var(--bg-glass-inner)', borderRadius: '4px', overflow: 'hidden' }}>
-                      <div style={{ width: `${g.pct}%`, height: '100%', background: g.pct >= 80 ? 'var(--accent-green-muted)' : g.pct >= 50 ? 'var(--accent-orange-muted)' : 'var(--accent-red-muted)', borderRadius: '4px', transition: 'width 0.4s' }}></div>
+                    <div style={{ height: '7px', background: 'var(--bg-code)', borderRadius: '4px', overflow: 'hidden' }}>
+                      <div style={{ width: `${g.pct}%`, height: '100%', background: g.pct >= 80 ? 'var(--text-dark)' : g.pct >= 50 ? 'var(--cf-tle-orange)' : 'var(--accent-red-muted)', borderRadius: '4px', transition: 'width 0.4s' }}></div>
                     </div>
                   </div>
                 ))}
               </div>
             </div>
 
-            {/* D: Tag Saturation â€” Strengths & Weaknesses */}
-            <div className="glass-panel-outer" style={{ padding: '16px' }}>
-              <h3 className="text-micro text-muted" style={{ marginBottom: '10px' }}>TAG GAP â€” STRENGTHS & WEAKNESSES</h3>
+            {/* D: Tag Saturation — Strengths & Weaknesses */}
+            <div className="cf-card" style={{ padding: '16px' }}>
+              <h3 className="text-micro text-muted" style={{ marginBottom: '10px' }}>TAG GAP — STRENGTHS & WEAKNESSES</h3>
               <div style={{ display: 'flex', flexDirection: 'column', gap: '5px', overflowY: 'auto', maxHeight: '280px' }}>
                 {(gaps?.tagGaps || []).slice(0, 12).map((g, i) => {
                   const isWeak = g.pct < 60;
@@ -1615,11 +1806,11 @@ h1{color:#00d4aa;border-bottom:1px solid #333;padding-bottom:16px}h2{color:#888;
                   return (
                     <div key={g.tag}>
                       <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '2px' }} className="text-mono text-sm">
-                        <span style={{ color: isWeak ? 'var(--accent-red-muted)' : isStrong ? 'var(--accent-green-muted)' : 'var(--text-secondary)' }}>{isWeak ? 'âš  ' : isStrong ? 'âœ“ ' : ''}{g.tag}</span>
-                        <span><span style={{ color: isWeak ? 'var(--accent-red-muted)' : 'var(--accent-cyan)' }}>{g.mine}</span><span className="text-micro text-secondary"> / {g.target}</span></span>
+                        <span style={{ color: isWeak ? 'var(--accent-red-muted)' : isStrong ? 'var(--text-dark)' : 'var(--text-muted)' }}>{isWeak ? '⚠ ' : isStrong ? '✓ ' : ''}{g.tag}</span>
+                        <span><span style={{ color: isWeak ? 'var(--accent-red-muted)' : 'var(--icpc-blue)' }}>{g.mine}</span><span className="text-micro text-secondary"> / {g.target}</span></span>
                       </div>
-                      <div style={{ height: '5px', background: 'var(--bg-glass-inner)', borderRadius: '3px', overflow: 'hidden' }}>
-                        <div style={{ width: `${Math.min(g.pct, 100)}%`, height: '100%', background: isWeak ? 'var(--accent-red-muted)' : isStrong ? 'var(--accent-green-muted)' : 'var(--accent-cyan)', borderRadius: '3px', opacity: 0.8 }}></div>
+                      <div style={{ height: '5px', background: 'var(--bg-code)', borderRadius: '3px', overflow: 'hidden' }}>
+                        <div style={{ width: `${Math.min(g.pct, 100)}%`, height: '100%', background: isWeak ? 'var(--accent-red-muted)' : isStrong ? 'var(--text-dark)' : 'var(--icpc-blue)', borderRadius: '3px', opacity: 0.8 }}></div>
                       </div>
                     </div>
                   );
@@ -1633,18 +1824,18 @@ h1{color:#00d4aa;border-bottom:1px solid #333;padding-bottom:16px}h2{color:#888;
             </div>
 
             {/* E: Daily Problem Plan */}
-            <div className="glass-panel-outer" style={{ padding: '16px' }}>
+            <div className="cf-card" style={{ padding: '16px' }}>
               <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '10px' }}>
                 <h3 className="text-micro text-muted">TODAY'S PROBLEM PLAN</h3>
-                <span className="text-mono text-micro" style={{ color: 'var(--accent-cyan)' }}>DAY {sprintDay}</span>
+                <span className="text-mono text-micro" style={{ color: 'var(--icpc-blue)' }}>DAY {sprintDay}</span>
               </div>
               {daily.length > 0 ? daily.map((p, i) => (
-                <a key={i} href={`https://codeforces.com/problemset/problem/${p.contestId}/${p.index}`} target="_blank" rel="noreferrer" style={{ textDecoration: 'none', display: 'flex', alignItems: 'center', gap: '10px', padding: '8px 10px', background: 'var(--bg-glass-inner)', borderRadius: '8px', border: `1px solid ${p.matchesWeak ? 'rgba(255,69,58,0.3)' : 'rgba(255,255,255,0.05)'}`, marginBottom: '6px' }}>
+                <a key={i} href={`https://codeforces.com/problemset/problem/${p.contestId}/${p.index}`} target="_blank" rel="noreferrer" style={{ textDecoration: 'none', display: 'flex', alignItems: 'center', gap: '10px', padding: '8px 10px', background: 'var(--bg-code)', borderRadius: '8px', border: `1px solid ${p.matchesWeak ? 'rgba(255,69,58,0.3)' : 'var(--border)'}`, marginBottom: '6px' }}>
                   <div style={{ minWidth: '50px', textAlign: 'center', padding: '3px 6px', background: `${rankMeta.color}22`, borderRadius: '5px' }}>
                     <span className="text-mono text-sm" style={{ color: rankMeta.color, fontWeight: 'bold' }}>{p.rating}</span>
                   </div>
                   <div style={{ flexGrow: 1 }}>
-                    <div className="text-mono text-sm text-primary">{p.contestId}{p.index} â€” {p.name}</div>
+                    <div className="text-mono text-sm text-primary">{p.contestId}{p.index} — {p.name}</div>
                     <div className="text-mono text-micro text-secondary">{p.tags.slice(0, 3).join(', ')}</div>
                   </div>
                   {p.matchesWeak && <span className="text-micro" style={{ color: 'var(--accent-red-muted)' }}>WEAK TAG</span>}
@@ -1654,9 +1845,9 @@ h1{color:#00d4aa;border-bottom:1px solid #333;padding-bottom:16px}h2{color:#888;
             </div>
 
             {/* F: Full Recommendation Queue */}
-            <div className="glass-panel-outer" style={{ padding: '16px' }}>
+            <div className="cf-card" style={{ padding: '16px' }}>
               <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '10px' }}>
-                <h3 className="text-micro text-muted">PROBLEM QUEUE â€” COHORT CATALYSTS</h3>
+                <h3 className="text-micro text-muted">PROBLEM QUEUE — COHORT CATALYSTS</h3>
                 <span className="text-mono text-micro text-secondary">{recs.length} problems</span>
               </div>
               <div style={{ overflowY: 'auto', maxHeight: '280px' }}>
@@ -1749,7 +1940,7 @@ h1{color:#00d4aa;border-bottom:1px solid #333;padding-bottom:16px}h2{color:#888;
     return (
       <div style={{ height: '100%', display: 'flex', flexDirection: 'column', gap: '14px', overflow: 'auto', padding: '4px' }}>
         {/* Header */}
-        <div className="glass-panel-outer" style={{ padding: '16px 24px', flexShrink: 0 }}>
+        <div className="cf-card" style={{ padding: '16px 24px', flexShrink: 0 }}>
           <h2 className="text-lg text-primary" style={{ letterSpacing: '-0.02em', marginBottom: '12px' }}>
             🔍 Topic Explorer — <span className="text-muted">Discover Problems by Tag & Rank Distribution</span>
           </h2>
@@ -1757,7 +1948,7 @@ h1{color:#00d4aa;border-bottom:1px solid #333;padding-bottom:16px}h2{color:#888;
         </div>
 
         {/* Tag Input & Controls */}
-        <div className="glass-panel-outer" style={{ padding: '16px', flexShrink: 0 }}>
+        <div className="cf-card" style={{ padding: '16px', flexShrink: 0 }}>
           <div style={{ display: 'flex', gap: '12px', alignItems: 'flex-start', flexWrap: 'wrap' }}>
             {/* Tag Autocomplete */}
             <div style={{ position: 'relative', flexGrow: 1, minWidth: '280px' }}>
@@ -1765,7 +1956,7 @@ h1{color:#00d4aa;border-bottom:1px solid #333;padding-bottom:16px}h2{color:#888;
               <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px', marginBottom: '8px' }}>
                 {teSelectedTags.map(tag => (
                   <div key={tag} style={{ display: 'flex', alignItems: 'center', gap: '6px', padding: '4px 10px', background: 'rgba(10,132,255,0.15)', border: '1px solid rgba(10,132,255,0.3)', borderRadius: '6px' }}>
-                    <span className="text-mono text-sm text-cyan">{tag}</span>
+                    <span className="text-mono text-sm text-primary">{tag}</span>
                     <span onClick={() => teRemoveTag(tag)} style={{ cursor: 'pointer', color: 'var(--text-muted)', fontSize: '14px' }}>×</span>
                   </div>
                 ))}
@@ -1776,13 +1967,13 @@ h1{color:#00d4aa;border-bottom:1px solid #333;padding-bottom:16px}h2{color:#888;
                 onFocus={() => { if (teTagInput.length >= 1) setTeShowSuggestions(true); }}
                 onKeyDown={e => { if (e.key === 'Enter' && teTagSuggestions.length > 0) teAddTag(teTagSuggestions[0]); }}
                 placeholder="Type tag (e.g. dp, sliding window, probabilities)"
-                style={{ width: '100%', background: 'var(--bg-glass-inner)', border: '1px solid var(--border-quant-harsh)', borderRadius: '8px', padding: '10px 14px', color: 'var(--text-primary)', outline: 'none' }}
+                style={{ width: '100%', background: 'var(--bg-code)', border: '1px solid var(--border)', borderRadius: '8px', padding: '10px 14px', color: 'var(--text-dark)', outline: 'none' }}
                 className="text-mono text-sm"
               />
               {teShowSuggestions && teTagSuggestions.length > 0 && (
-                <div style={{ position: 'absolute', top: '100%', left: 0, right: 0, background: 'rgba(15,15,20,0.98)', border: '1px solid var(--border-quant-harsh)', borderRadius: '8px', zIndex: 50, maxHeight: '200px', overflowY: 'auto', marginTop: '4px' }}>
+                <div style={{ position: 'absolute', top: '100%', left: 0, right: 0, background: 'rgba(15,15,20,0.98)', border: '1px solid var(--border)', borderRadius: '8px', zIndex: 50, maxHeight: '200px', overflowY: 'auto', marginTop: '4px' }}>
                   {teTagSuggestions.map(tag => (
-                    <div key={tag} onClick={() => teAddTag(tag)} className="text-mono text-sm" style={{ padding: '8px 14px', cursor: 'pointer', color: 'var(--text-primary)', borderBottom: '1px solid rgba(255,255,255,0.03)', transition: 'background 0.15s' }} onMouseEnter={e => e.target.style.background = 'rgba(255,255,255,0.06)'} onMouseLeave={e => e.target.style.background = 'transparent'}>
+                    <div key={tag} onClick={() => teAddTag(tag)} className="text-mono text-sm" style={{ padding: '8px 14px', cursor: 'pointer', color: 'var(--text-dark)', borderBottom: '1px solid var(--border)', transition: 'background 0.15s' }} onMouseEnter={e => e.target.style.background = 'var(--border)'} onMouseLeave={e => e.target.style.background = 'transparent'}>
                       {tag}
                     </div>
                   ))}
@@ -1794,16 +1985,16 @@ h1{color:#00d4aa;border-bottom:1px solid #333;padding-bottom:16px}h2{color:#888;
             <div>
               <div className="text-micro text-secondary" style={{ marginBottom: '6px' }}>RATING RANGE</div>
               <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
-                <input type="number" value={teMinRating} onChange={e => setTeMinRating(Number(e.target.value))} style={{ width: '70px', background: 'var(--bg-glass-inner)', border: '1px solid var(--border-quant-harsh)', borderRadius: '6px', padding: '8px', color: 'var(--text-primary)', textAlign: 'center' }} className="text-mono text-sm" />
+                <input type="number" value={teMinRating} onChange={e => setTeMinRating(Number(e.target.value))} style={{ width: '70px', background: 'var(--bg-code)', border: '1px solid var(--border)', borderRadius: '6px', padding: '8px', color: 'var(--text-dark)', textAlign: 'center' }} className="text-mono text-sm" />
                 <span className="text-muted">—</span>
-                <input type="number" value={teMaxRating} onChange={e => setTeMaxRating(Number(e.target.value))} style={{ width: '70px', background: 'var(--bg-glass-inner)', border: '1px solid var(--border-quant-harsh)', borderRadius: '6px', padding: '8px', color: 'var(--text-primary)', textAlign: 'center' }} className="text-mono text-sm" />
+                <input type="number" value={teMaxRating} onChange={e => setTeMaxRating(Number(e.target.value))} style={{ width: '70px', background: 'var(--bg-code)', border: '1px solid var(--border)', borderRadius: '6px', padding: '8px', color: 'var(--text-dark)', textAlign: 'center' }} className="text-mono text-sm" />
               </div>
             </div>
 
             {/* Sort & Search */}
             <div>
               <div className="text-micro text-secondary" style={{ marginBottom: '6px' }}>SORT BY</div>
-              <select value={teSortBy} onChange={e => setTeSortBy(e.target.value)} style={{ background: 'var(--bg-glass-inner)', border: '1px solid var(--border-quant-harsh)', borderRadius: '6px', padding: '8px 12px', color: 'var(--text-primary)', outline: 'none', cursor: 'pointer' }} className="text-mono text-sm">
+              <select value={teSortBy} onChange={e => setTeSortBy(e.target.value)} style={{ background: 'var(--bg-code)', border: '1px solid var(--border)', borderRadius: '6px', padding: '8px 12px', color: 'var(--text-dark)', outline: 'none', cursor: 'pointer' }} className="text-mono text-sm">
                 <option value="gm_desc">GM Solvers ↓</option>
                 <option value="gm_asc">GM Solvers ↑</option>
                 <option value="master_desc">Master Solvers ↓</option>
@@ -1816,7 +2007,7 @@ h1{color:#00d4aa;border-bottom:1px solid #333;padding-bottom:16px}h2{color:#888;
             </div>
 
             <div style={{ alignSelf: 'flex-end' }}>
-              <button onClick={teSearch} disabled={teLoading || teSelectedTags.length === 0} style={{ background: teLoading ? 'var(--bg-glass-inner)' : 'var(--accent-cyan)', color: teLoading ? 'var(--text-muted)' : '#000', border: '1px solid var(--accent-cyan)', borderRadius: '8px', padding: '10px 24px', cursor: teLoading ? 'default' : 'pointer', fontWeight: 'bold', transition: 'all 0.2s' }} className="text-mono text-sm">
+              <button onClick={teSearch} disabled={teLoading || teSelectedTags.length === 0} style={{ background: teLoading ? 'var(--bg-code)' : 'var(--icpc-blue)', color: teLoading ? 'var(--text-muted)' : '#000', border: '1px solid var(--icpc-blue)', borderRadius: '8px', padding: '10px 24px', cursor: teLoading ? 'default' : 'pointer', fontWeight: 'bold', transition: 'all 0.2s' }} className="text-mono text-sm">
                 {teLoading ? '⏳ ANALYZING...' : '⟳ EXPLORE'}
               </button>
             </div>
@@ -1826,7 +2017,7 @@ h1{color:#00d4aa;border-bottom:1px solid #333;padding-bottom:16px}h2{color:#888;
           <div style={{ marginTop: '12px', display: 'flex', gap: '6px', flexWrap: 'wrap' }}>
             <span className="text-micro text-muted" style={{ alignSelf: 'center', marginRight: '4px' }}>QUICK:</span>
             {['dp', 'greedy', 'math', 'graphs', 'binary search', 'data structures', 'trees', 'constructive algorithms', 'two pointers', 'number theory', 'combinatorics', 'strings', 'dfs and similar', 'bitmasks', 'divide and conquer', 'probabilities'].map(tag => (
-              <div key={tag} onClick={() => teAddTag(tag)} style={{ padding: '3px 10px', borderRadius: '5px', border: `1px solid ${teSelectedTags.includes(tag) ? 'var(--accent-cyan)' : 'rgba(255,255,255,0.08)'}`, background: teSelectedTags.includes(tag) ? 'rgba(100,210,255,0.1)' : 'transparent', cursor: 'pointer', transition: 'all 0.2s' }} className="text-mono text-micro text-secondary">
+              <div key={tag} onClick={() => teAddTag(tag)} style={{ padding: '3px 10px', borderRadius: '5px', border: `1px solid ${teSelectedTags.includes(tag) ? 'var(--icpc-blue)' : 'var(--border)'}`, background: teSelectedTags.includes(tag) ? 'rgba(100,210,255,0.1)' : 'transparent', cursor: 'pointer', transition: 'all 0.2s' }} className="text-mono text-micro text-secondary">
                 {tag}
               </div>
             ))}
@@ -1835,21 +2026,21 @@ h1{color:#00d4aa;border-bottom:1px solid #333;padding-bottom:16px}h2{color:#888;
 
         {/* Status */}
         {teStatus && (
-          <div className="text-mono text-sm text-cyan" style={{ padding: '0 8px', flexShrink: 0 }}>
+          <div className="text-mono text-sm text-primary" style={{ padding: '0 8px', flexShrink: 0 }}>
             {teLoading && '⏳ '}{teStatus}
           </div>
         )}
 
         {/* Results Table */}
         {teProblems.length > 0 && (
-          <div className="glass-panel-outer" style={{ flexGrow: 1, display: 'flex', flexDirection: 'column', padding: '0', overflow: 'hidden' }}>
+          <div className="cf-card" style={{ flexGrow: 1, display: 'flex', flexDirection: 'column', padding: '0', overflow: 'hidden' }}>
             {/* Summary Stats Bar */}
-            <div style={{ padding: '12px 20px', display: 'flex', gap: '24px', background: 'rgba(0,0,0,0.2)', borderBottom: '1px solid rgba(255,255,255,0.06)', flexShrink: 0 }}>
+            <div style={{ padding: '12px 20px', display: 'flex', gap: '24px', background: 'var(--bg-page)', borderBottom: '1px solid rgba(255,255,255,0.06)', flexShrink: 0 }}>
               <div className="text-mono text-sm">
                 <span className="text-muted">PROBLEMS:</span> <span className="text-primary">{sorted.length}</span>
               </div>
               <div className="text-mono text-sm">
-                <span className="text-muted">TAGS:</span> <span className="text-cyan">{teSelectedTags.join(', ')}</span>
+                <span className="text-muted">TAGS:</span> <span className="text-primary">{teSelectedTags.join(', ')}</span>
               </div>
               <div className="text-mono text-sm">
                 <span className="text-muted">RANGE:</span> <span className="text-primary">{teMinRating}–{teMaxRating}</span>
@@ -1860,7 +2051,7 @@ h1{color:#00d4aa;border-bottom:1px solid #333;padding-bottom:16px}h2{color:#888;
             </div>
 
             {/* Table Header */}
-            <div style={{ display: 'grid', gridTemplateColumns: '2.5fr 70px 70px repeat(5, 1fr) 90px', padding: '8px 16px', background: 'rgba(255,255,255,0.02)', borderBottom: '1px solid rgba(255,255,255,0.08)', flexShrink: 0 }} className="text-micro text-secondary">
+            <div style={{ display: 'grid', gridTemplateColumns: '2.5fr 70px 70px repeat(5, 1fr) 90px', padding: '8px 16px', background: 'var(--bg-page)', borderBottom: '1px solid var(--border)', flexShrink: 0 }} className="text-micro text-secondary">
               <span>PROBLEM</span>
               <span style={{ textAlign: 'center' }}>RATING</span>
               <span style={{ textAlign: 'center' }}>SOLVED</span>
@@ -1880,7 +2071,7 @@ h1{color:#00d4aa;border-bottom:1px solid #333;padding-bottom:16px}h2{color:#888;
                 const isEstimate = bd.fetched === false;
 
                 return (
-                  <div key={prob.pid} style={{ display: 'grid', gridTemplateColumns: '2.5fr 70px 70px repeat(5, 1fr) 90px', padding: '6px 16px', borderBottom: '1px solid rgba(255,255,255,0.03)', alignItems: 'center', background: idx % 2 === 0 ? 'transparent' : 'rgba(255,255,255,0.01)' }} className="text-mono text-sm hover-bg">
+                  <div key={prob.pid} style={{ display: 'grid', gridTemplateColumns: '2.5fr 70px 70px repeat(5, 1fr) 90px', padding: '6px 16px', borderBottom: '1px solid var(--border)', alignItems: 'center', background: idx % 2 === 0 ? 'transparent' : 'rgba(255,255,255,0.01)' }} className="text-mono text-sm hover-bg">
                     <span className="text-primary" style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', paddingRight: '8px' }}>
                       {prob.contestId}{prob.index} — {prob.name}
                     </span>
@@ -1895,7 +2086,7 @@ h1{color:#00d4aa;border-bottom:1px solid #333;padding-bottom:16px}h2{color:#888;
                         </span>
                       );
                     })}
-                    <a href={`https://codeforces.com/problemset/problem/${prob.contestId}/${prob.index}`} target="_blank" rel="noreferrer" style={{ textAlign: 'center', color: 'var(--accent-cyan)', textDecoration: 'none', fontSize: '11px' }}>
+                    <a href={`https://codeforces.com/problemset/problem/${prob.contestId}/${prob.index}`} target="_blank" rel="noreferrer" style={{ textAlign: 'center', color: 'var(--icpc-blue)', textDecoration: 'none', fontSize: '11px' }}>
                       SOLVE →
                     </a>
                   </div>
@@ -1909,9 +2100,9 @@ h1{color:#00d4aa;border-bottom:1px solid #333;padding-bottom:16px}h2{color:#888;
             {/* Pagination */}
             {totalPages > 1 && (
               <div style={{ padding: '10px 16px', display: 'flex', gap: '8px', justifyContent: 'center', borderTop: '1px solid rgba(255,255,255,0.06)', flexShrink: 0 }}>
-                <button onClick={() => setTePage(Math.max(0, tePage - 1))} disabled={tePage === 0} style={{ background: 'var(--bg-glass-inner)', border: '1px solid var(--border-quant-harsh)', borderRadius: '6px', padding: '6px 14px', color: tePage === 0 ? 'var(--text-tertiary)' : 'var(--text-primary)', cursor: tePage === 0 ? 'default' : 'pointer' }} className="text-mono text-sm">← PREV</button>
+                <button onClick={() => setTePage(Math.max(0, tePage - 1))} disabled={tePage === 0} style={{ background: 'var(--bg-code)', border: '1px solid var(--border)', borderRadius: '6px', padding: '6px 14px', color: tePage === 0 ? 'var(--text-tertiary)' : 'var(--text-dark)', cursor: tePage === 0 ? 'default' : 'pointer' }} className="text-mono text-sm">← PREV</button>
                 <span className="text-mono text-sm text-secondary" style={{ alignSelf: 'center' }}>{tePage + 1} / {totalPages}</span>
-                <button onClick={() => setTePage(Math.min(totalPages - 1, tePage + 1))} disabled={tePage >= totalPages - 1} style={{ background: 'var(--bg-glass-inner)', border: '1px solid var(--border-quant-harsh)', borderRadius: '6px', padding: '6px 14px', color: tePage >= totalPages - 1 ? 'var(--text-tertiary)' : 'var(--text-primary)', cursor: tePage >= totalPages - 1 ? 'default' : 'pointer' }} className="text-mono text-sm">NEXT →</button>
+                <button onClick={() => setTePage(Math.min(totalPages - 1, tePage + 1))} disabled={tePage >= totalPages - 1} style={{ background: 'var(--bg-code)', border: '1px solid var(--border)', borderRadius: '6px', padding: '6px 14px', color: tePage >= totalPages - 1 ? 'var(--text-tertiary)' : 'var(--text-dark)', cursor: tePage >= totalPages - 1 ? 'default' : 'pointer' }} className="text-mono text-sm">NEXT →</button>
               </div>
             )}
           </div>
@@ -1926,10 +2117,10 @@ h1{color:#00d4aa;border-bottom:1px solid #333;padding-bottom:16px}h2{color:#888;
 
         {/* Empty State */}
         {teProblems.length === 0 && !teLoading && (
-          <div className="glass-panel-outer" style={{ padding: '60px', textAlign: 'center' }}>
-            <p className="text-mono text-muted" style={{ marginBottom: '12px' }}>Select one or more topic tags above and click <span style={{ color: 'var(--accent-cyan)' }}>EXPLORE</span> to discover problems.</p>
-            <p className="text-mono text-micro text-secondary">For example: select <span className="text-cyan">dp</span> + <span className="text-cyan">probabilities</span> to find DP problems involving probability.</p>
-            <p className="text-mono text-micro text-secondary" style={{ marginTop: '8px' }}>Or try <span className="text-cyan">two pointers</span> for sliding window style problems.</p>
+          <div className="cf-card" style={{ padding: '60px', textAlign: 'center' }}>
+            <p className="text-mono text-muted" style={{ marginBottom: '12px' }}>Select one or more topic tags above and click <span style={{ color: 'var(--icpc-blue)' }}>EXPLORE</span> to discover problems.</p>
+            <p className="text-mono text-micro text-secondary">For example: select <span className="text-primary">dp</span> + <span className="text-primary">probabilities</span> to find DP problems involving probability.</p>
+            <p className="text-mono text-micro text-secondary" style={{ marginTop: '8px' }}>Or try <span className="text-primary">two pointers</span> for sliding window style problems.</p>
           </div>
         )}
       </div>
@@ -2001,19 +2192,19 @@ h1{color:#00d4aa;border-bottom:1px solid #333;padding-bottom:16px}h2{color:#888;
     if (thSetupMode || !thProfile) {
       return (
         <div style={{ height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-          <div className="glass-panel-outer" style={{ padding: '40px', maxWidth: '520px', width: '100%' }}>
+          <div className="cf-card" style={{ padding: '40px', maxWidth: '520px', width: '100%' }}>
             <h2 className="text-lg text-primary" style={{ marginBottom: '8px', textAlign: 'center' }}>🔥 Training Hub Setup</h2>
             <p className="text-mono text-micro text-muted" style={{ textAlign: 'center', marginBottom: '28px' }}>Set your profile & goals to begin tracking</p>
 
             <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
               <div>
                 <div className="text-micro text-secondary" style={{ marginBottom: '6px' }}>CODEFORCES HANDLE</div>
-                <input value={thSetupHandle} onChange={e => setThSetupHandle(e.target.value)} placeholder="your_handle" style={{ width: '100%', background: 'var(--bg-glass-inner)', border: '1px solid var(--border-quant-harsh)', borderRadius: '8px', padding: '12px 16px', color: 'var(--text-primary)', outline: 'none', boxSizing: 'border-box' }} className="text-mono text-sm" />
+                <input value={thSetupHandle} onChange={e => setThSetupHandle(e.target.value)} placeholder="your_handle" style={{ width: '100%', background: 'var(--bg-code)', border: '1px solid var(--border)', borderRadius: '8px', padding: '12px 16px', color: 'var(--text-dark)', outline: 'none', boxSizing: 'border-box' }} className="text-mono text-sm" />
               </div>
 
               <div>
                 <div className="text-micro text-secondary" style={{ marginBottom: '6px' }}>TARGET RANK</div>
-                <select value={thSetupGoalRank} onChange={e => setThSetupGoalRank(e.target.value)} style={{ width: '100%', background: 'var(--bg-glass-inner)', border: '1px solid var(--border-quant-harsh)', borderRadius: '8px', padding: '12px 16px', color: 'var(--text-primary)', outline: 'none', cursor: 'pointer', boxSizing: 'border-box' }} className="text-mono text-sm">
+                <select value={thSetupGoalRank} onChange={e => setThSetupGoalRank(e.target.value)} style={{ width: '100%', background: 'var(--bg-code)', border: '1px solid var(--border)', borderRadius: '8px', padding: '12px 16px', color: 'var(--text-dark)', outline: 'none', cursor: 'pointer', boxSizing: 'border-box' }} className="text-mono text-sm">
                   {Object.keys(rankGoals).map(r => <option key={r} value={r}>{r.charAt(0).toUpperCase() + r.slice(1)} ({rankGoals[r]}+)</option>)}
                 </select>
               </div>
@@ -2021,18 +2212,18 @@ h1{color:#00d4aa;border-bottom:1px solid #333;padding-bottom:16px}h2{color:#888;
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
                 <div>
                   <div className="text-micro text-secondary" style={{ marginBottom: '6px' }}>DAYS TO REACH</div>
-                  <input type="number" value={thSetupDays} onChange={e => setThSetupDays(Number(e.target.value))} style={{ width: '100%', background: 'var(--bg-glass-inner)', border: '1px solid var(--border-quant-harsh)', borderRadius: '8px', padding: '12px 16px', color: 'var(--text-primary)', textAlign: 'center', outline: 'none', boxSizing: 'border-box' }} className="text-mono text-sm" />
+                  <input type="number" value={thSetupDays} onChange={e => setThSetupDays(Number(e.target.value))} style={{ width: '100%', background: 'var(--bg-code)', border: '1px solid var(--border)', borderRadius: '8px', padding: '12px 16px', color: 'var(--text-dark)', textAlign: 'center', outline: 'none', boxSizing: 'border-box' }} className="text-mono text-sm" />
                 </div>
                 <div>
                   <div className="text-micro text-secondary" style={{ marginBottom: '6px' }}>DAILY PROBLEM QUOTA</div>
-                  <input type="number" value={thSetupDailyQ} onChange={e => setThSetupDailyQ(Number(e.target.value))} style={{ width: '100%', background: 'var(--bg-glass-inner)', border: '1px solid var(--border-quant-harsh)', borderRadius: '8px', padding: '12px 16px', color: 'var(--text-primary)', textAlign: 'center', outline: 'none', boxSizing: 'border-box' }} className="text-mono text-sm" />
+                  <input type="number" value={thSetupDailyQ} onChange={e => setThSetupDailyQ(Number(e.target.value))} style={{ width: '100%', background: 'var(--bg-code)', border: '1px solid var(--border)', borderRadius: '8px', padding: '12px 16px', color: 'var(--text-dark)', textAlign: 'center', outline: 'none', boxSizing: 'border-box' }} className="text-mono text-sm" />
                 </div>
               </div>
 
-              <button onClick={thSaveSetup} disabled={thLoading || !thSetupHandle.trim()} style={{ background: 'var(--accent-cyan)', color: '#000', border: 'none', borderRadius: '8px', padding: '14px', cursor: 'pointer', fontWeight: 'bold', marginTop: '8px', transition: 'all 0.2s' }} className="text-mono text-sm">
+              <button onClick={thSaveSetup} disabled={thLoading || !thSetupHandle.trim()} style={{ background: 'var(--icpc-blue)', color: '#000', border: 'none', borderRadius: '8px', padding: '14px', cursor: 'pointer', fontWeight: 'bold', marginTop: '8px', transition: 'all 0.2s' }} className="text-mono text-sm">
                 {thLoading ? '⏳ VERIFYING...' : '🚀 START TRAINING'}
               </button>
-              {thStatus && <div className="text-mono text-micro text-cyan" style={{ textAlign: 'center' }}>{thStatus}</div>}
+              {thStatus && <div className="text-mono text-micro text-muted" style={{ textAlign: 'center' }}>{thStatus}</div>}
             </div>
           </div>
         </div>
@@ -2095,17 +2286,17 @@ h1{color:#00d4aa;border-bottom:1px solid #333;padding-bottom:16px}h2{color:#888;
       const rivalColors = ['#ff6b6b', '#ffd93d', '#6bcb77', '#4d96ff', '#ff8e4a', '#c084fc', '#f472b6', '#34d399'];
 
       return (
-        <div className="glass-panel-outer" style={{ padding: '16px' }}>
+        <div className="cf-card" style={{ padding: '16px' }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px' }}>
             <h3 className="text-micro text-muted">RATING COMPARISON — YOU vs RIVALS (LAST 12 MONTHS)</h3>
-            <button onClick={thLoadRivals} disabled={thLoading} className="text-mono text-micro" style={{ background: 'var(--bg-glass-inner)', border: '1px solid var(--border-quant-harsh)', borderRadius: '6px', padding: '5px 12px', color: 'var(--accent-cyan)', cursor: 'pointer' }}>⟳ REFRESH</button>
+            <button onClick={thLoadRivals} disabled={thLoading} className="text-mono text-micro" style={{ background: 'var(--bg-code)', border: '1px solid var(--border)', borderRadius: '6px', padding: '5px 12px', color: 'var(--icpc-blue)', cursor: 'pointer' }}>⟳ REFRESH</button>
           </div>
-          <svg viewBox={`0 0 ${gW} ${gH}`} style={{ width: '100%', height: '360px', background: 'rgba(0,0,0,0.2)', borderRadius: '8px' }} preserveAspectRatio="none">
+          <svg viewBox={`0 0 ${gW} ${gH}`} style={{ width: '100%', height: '360px', background: 'var(--bg-page)', borderRadius: '8px' }} preserveAspectRatio="none">
             {/* Rating bands */}
             {[1200,1400,1600,1900,2100,2400,2600,2800,3000].filter(r => r >= rMin && r <= rMax).map(r => (
               <g key={r}>
                 <line x1={paddingX} y1={toY(r)} x2={gW - rightPadding} y2={toY(r)} stroke="rgba(255,255,255,0.06)" />
-                <text x="4" y={toY(r) + 3} fill="rgba(255,255,255,0.4)" fontSize="10" fontFamily="monospace">{r}</text>
+                <text x="4" y={toY(r) + 3} fill="var(--text-muted)" fontSize="10" fontFamily="monospace">{r}</text>
               </g>
             ))}
             {/* X-axis months */}
@@ -2116,7 +2307,7 @@ h1{color:#00d4aa;border-bottom:1px solid #333;padding-bottom:16px}h2{color:#888;
               const ts = d.getTime() / 1000;
               if (ts < tMin || ts > tMax) return null;
               return (
-                <text key={i} x={toX(ts)} y={gH - 5} fill="rgba(255,255,255,0.4)" fontSize="10" fontFamily="monospace" textAnchor="middle">{mName}</text>
+                <text key={i} x={toX(ts)} y={gH - 5} fill="var(--text-muted)" fontSize="10" fontFamily="monospace" textAnchor="middle">{mName}</text>
               );
             })}
             {/* Rival lines */}
@@ -2124,7 +2315,7 @@ h1{color:#00d4aa;border-bottom:1px solid #333;padding-bottom:16px}h2{color:#888;
               const pts = (thRivalHistories[h] || []).filter(p => p.ts >= cutoff);
               if (pts.length < 2) return null;
               const isMe = h === p.handle;
-              const color = isMe ? 'var(--accent-cyan)' : rivalColors[idx % rivalColors.length];
+              const color = isMe ? 'var(--icpc-blue)' : rivalColors[idx % rivalColors.length];
               const points = pts.map(pt => `${toX(pt.ts)},${toY(pt.rating)}`).join(' ');
               return (
                 <g key={h}>
@@ -2141,7 +2332,7 @@ h1{color:#00d4aa;border-bottom:1px solid #333;padding-bottom:16px}h2{color:#888;
           <div style={{ display: 'flex', flexWrap: 'wrap', gap: '10px', marginTop: '10px' }}>
             {allHandles.map((h, idx) => {
               const isMe = h === p.handle;
-              const color = isMe ? 'var(--accent-cyan)' : rivalColors[idx % rivalColors.length];
+              const color = isMe ? 'var(--icpc-blue)' : rivalColors[idx % rivalColors.length];
               return (
                 <div key={h} style={{ display: 'flex', alignItems: 'center', gap: '5px' }}>
                   <div style={{ width: '12px', height: '3px', background: color, borderRadius: '2px' }} />
@@ -2153,66 +2344,74 @@ h1{color:#00d4aa;border-bottom:1px solid #333;padding-bottom:16px}h2{color:#888;
         </div>
       );
     } catch (err) {
-      return <div className="glass-panel-outer" style={{ padding: '16px', color: 'red' }}>Error rendering graph: {err.message}</div>;
+      return <div className="cf-card" style={{ padding: '16px', color: 'red' }}>Error rendering graph: {err.message}</div>;
     }
   };
 
     return (
       <div style={{ height: '100%', display: 'flex', flexDirection: 'column', gap: '14px', overflow: 'auto', padding: '4px' }}>
         {/* Profile Header */}
-        <div className="glass-panel-outer" style={{ padding: '16px 24px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexShrink: 0 }}>
+        <div className="cf-card" style={{ padding: '16px 24px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexShrink: 0 }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
-            {p.avatar && <img src={p.avatar.startsWith('//') ? 'https:' + p.avatar : p.avatar} alt="" style={{ width: '48px', height: '48px', borderRadius: '50%', border: '2px solid var(--accent-cyan)' }} />}
+            {p.avatar && <img src={p.avatar.startsWith('//') ? 'https:' + p.avatar : p.avatar} alt="" style={{ width: '48px', height: '48px', borderRadius: '50%', border: '2px solid var(--icpc-blue)' }} />}
             <div>
               <h2 className="text-lg text-primary" style={{ letterSpacing: '-0.02em' }}>
                 🔥 {p.handle}'s Training Hub
               </h2>
               <p className="text-mono text-micro text-secondary">
-                Current: <span style={{ color: getCfColor(p.rating) }}>{p.rating} ({p.rank})</span> → Target: <span style={{ color: getCfColor(goalRating) }}>{goalRating} ({p.goalRank})</span> — Rating Gap: <span className="text-cyan">{ratingGap}</span>
+                Current: <span style={{ color: getCfColor(p.rating) }}>{p.rating} ({p.rank})</span> → Target: <span style={{ color: getCfColor(goalRating) }}>{goalRating} ({p.goalRank})</span> — Rating Gap: <span className="text-primary">{ratingGap}</span>
               </p>
             </div>
           </div>
           <div style={{ display: 'flex', gap: '8px' }}>
-            <button onClick={thSyncProgress} disabled={thLoading} className="text-mono text-micro" style={{ background: 'var(--bg-glass-inner)', border: '1px solid var(--accent-cyan)', borderRadius: '6px', padding: '8px 16px', color: 'var(--accent-cyan)', cursor: 'pointer' }}>⟳ SYNC</button>
-            <button onClick={() => setThSetupMode(true)} className="text-mono text-micro" style={{ background: 'var(--bg-glass-inner)', border: '1px solid var(--border-quant-harsh)', borderRadius: '6px', padding: '8px 16px', color: 'var(--text-muted)', cursor: 'pointer' }}>⚙ EDIT</button>
+            <button onClick={thSyncProgress} disabled={thLoading} className="text-mono text-micro" style={{ background: 'var(--bg-code)', border: '1px solid var(--icpc-blue)', borderRadius: '6px', padding: '8px 16px', color: 'var(--icpc-blue)', cursor: 'pointer' }}>⟳ SYNC</button>
+            <button onClick={() => setThSetupMode(true)} className="text-mono text-micro" style={{ background: 'var(--bg-code)', border: '1px solid var(--border)', borderRadius: '6px', padding: '8px 16px', color: 'var(--text-muted)', cursor: 'pointer' }}>⚙ EDIT</button>
           </div>
         </div>
 
-        {thStatus && <div className="text-mono text-sm text-cyan" style={{ padding: '0 8px', flexShrink: 0 }}>{thLoading && '⏳ '}{thStatus}</div>}
+        {thStatus && <div className="text-mono text-sm text-primary" style={{ padding: '0 8px', flexShrink: 0 }}>{thLoading && '⏳ '}{thStatus}</div>}
 
-        {/* Stats Row */}
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(5, 1fr)', gap: '10px', flexShrink: 0 }}>
-          {[
-            { label: 'DAY', value: `${dayNumber} / ${p.goalDays}`, color: 'var(--accent-cyan)' },
-            { label: 'DAYS LEFT', value: daysLeft, color: daysLeft < 10 ? '#ff4444' : 'var(--text-primary)' },
-            { label: 'STREAK', value: `${streak}🔥`, color: streak >= 3 ? '#ff8c00' : 'var(--text-primary)' },
-            { label: 'TODAY', value: `${thProgress[today.toISOString().split('T')[0]]?.solved || 0} / ${p.dailyQuota}`, color: (thProgress[today.toISOString().split('T')[0]]?.solved || 0) >= p.dailyQuota ? '#00ff88' : 'var(--text-primary)' },
-            { label: 'TOTAL SOLVED', value: totalTracked, color: 'var(--accent-cyan)' },
-          ].map((s, i) => (
-            <div key={i} className="glass-panel-outer" style={{ padding: '12px 16px', textAlign: 'center' }}>
-              <div className="text-micro text-muted">{s.label}</div>
-              <div className="text-mono text-lg" style={{ color: s.color, marginTop: '4px' }}>{s.value}</div>
+        {/* Delta-Velocity Sprint Engine Stats */}
+        {(() => {
+          const remProblems = Math.max(0, p.goalDays * p.dailyQuota - totalTracked);
+          const reqDailyAC = daysLeft > 0 ? (remProblems / daysLeft).toFixed(1) : 0;
+          const velocityMult = streak > 0 ? (1 + Math.min(streak * 0.05, 0.5)).toFixed(2) : 1.0;
+          return (
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(6, 1fr)', gap: '10px', flexShrink: 0 }}>
+              {[
+                { label: 'DAY', value: `${dayNumber} / ${p.goalDays}`, color: 'var(--icpc-blue)' },
+                { label: 'DAYS LEFT', value: daysLeft, color: daysLeft < 10 ? 'var(--icpc-red)' : 'var(--text-dark)' },
+                { label: 'STREAK', value: `${streak}🔥`, color: streak >= 3 ? '#ff8c00' : 'var(--text-dark)' },
+                { label: 'TODAY', value: `${thProgress[today.toISOString().split('T')[0]]?.solved || 0} / ${p.dailyQuota}`, color: (thProgress[today.toISOString().split('T')[0]]?.solved || 0) >= p.dailyQuota ? 'var(--icpc-green)' : 'var(--text-dark)' },
+                { label: 'REQ. DAILY AC', value: reqDailyAC, color: reqDailyAC > p.dailyQuota ? 'var(--icpc-red)' : 'var(--text-dark)' },
+                { label: 'VELOCITY MULT', value: `${velocityMult}x`, color: velocityMult > 1 ? 'var(--icpc-green)' : 'var(--text-muted)' },
+              ].map((s, i) => (
+                <div key={i} className="cf-card" style={{ padding: '12px 16px', textAlign: 'center' }}>
+                  <div className="text-micro text-muted">{s.label}</div>
+                  <div className="text-mono text-lg" style={{ color: s.color, marginTop: '4px' }}>{s.value}</div>
+                </div>
+              ))}
             </div>
-          ))}
-        </div>
+          );
+        })()}
 
         {/* Progress Bar */}
-        <div className="glass-panel-outer" style={{ padding: '12px 20px', flexShrink: 0 }}>
+        <div className="cf-card" style={{ padding: '12px 20px', flexShrink: 0 }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '6px' }}>
-            <span className="text-micro text-muted">SPRINT PROGRESS</span>
-            <span className="text-mono text-micro text-cyan">{progressPct}%</span>
+            <span className="text-micro text-muted">DELTA-VELOCITY SPRINT PROGRESS</span>
+            <span className="text-mono text-micro text-muted">{progressPct}%</span>
           </div>
-          <div style={{ height: '8px', background: 'rgba(255,255,255,0.05)', borderRadius: '4px', overflow: 'hidden' }}>
-            <div style={{ width: `${progressPct}%`, height: '100%', background: 'linear-gradient(90deg, var(--accent-cyan), #00ff88)', borderRadius: '4px', transition: 'width 0.5s' }} />
+          <div style={{ height: '8px', background: 'var(--border)', borderRadius: '4px', overflow: 'hidden' }}>
+            <div style={{ width: `${progressPct}%`, height: '100%', background: 'linear-gradient(90deg, var(--icpc-blue), #00ff88)', borderRadius: '4px', transition: 'width 0.5s' }} />
           </div>
         </div>
 
         {/* Calendar Checklist */}
-        <div className="glass-panel-outer" style={{ padding: '16px', flexShrink: 0 }}>
+        <div className="cf-card" style={{ padding: '16px', flexShrink: 0 }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px' }}>
-            <button onClick={() => { if (calMonth === 0) { setThCalMonth(11); setThCalYear(calYear - 1); } else setThCalMonth(calMonth - 1); }} className="text-mono text-sm" style={{ background: 'none', border: '1px solid var(--border-quant-harsh)', borderRadius: '6px', padding: '4px 12px', color: 'var(--text-primary)', cursor: 'pointer' }}>◀</button>
+            <button onClick={() => { if (calMonth === 0) { setThCalMonth(11); setThCalYear(calYear - 1); } else setThCalMonth(calMonth - 1); }} className="text-mono text-sm" style={{ background: 'none', border: '1px solid var(--border)', borderRadius: '6px', padding: '4px 12px', color: 'var(--text-dark)', cursor: 'pointer' }}>◀</button>
             <h3 className="text-mono text-sm text-primary">{monthNames[calMonth]} {calYear}</h3>
-            <button onClick={() => { if (calMonth === 11) { setThCalMonth(0); setThCalYear(calYear + 1); } else setThCalMonth(calMonth + 1); }} className="text-mono text-sm" style={{ background: 'none', border: '1px solid var(--border-quant-harsh)', borderRadius: '6px', padding: '4px 12px', color: 'var(--text-primary)', cursor: 'pointer' }}>▶</button>
+            <button onClick={() => { if (calMonth === 11) { setThCalMonth(0); setThCalYear(calYear + 1); } else setThCalMonth(calMonth + 1); }} className="text-mono text-sm" style={{ background: 'none', border: '1px solid var(--border)', borderRadius: '6px', padding: '4px 12px', color: 'var(--text-dark)', cursor: 'pointer' }}>▶</button>
           </div>
           {/* Day headers */}
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(7, 1fr)', gap: '4px', marginBottom: '4px' }}>
@@ -2240,8 +2439,8 @@ h1{color:#00d4aa;border-bottom:1px solid #333;padding-bottom:16px}h2{color:#888;
               else if (!isFuture && !isBeforeStart) { bg = 'rgba(255,0,0,0.05)'; icon = '·'; }
 
               return (
-                <div key={day} style={{ padding: '6px 2px', textAlign: 'center', borderRadius: '6px', background: bg, border: isToday ? '1.5px solid var(--accent-cyan)' : '1px solid transparent', cursor: 'default', minHeight: '40px', display: 'flex', flexDirection: 'column', justifyContent: 'center', alignItems: 'center', gap: '2px' }}>
-                  <span className="text-mono text-micro" style={{ color: isToday ? 'var(--accent-cyan)' : isFuture ? 'var(--text-tertiary)' : 'var(--text-secondary)', fontWeight: isToday ? 'bold' : 'normal' }}>{day}</span>
+                <div key={day} style={{ padding: '6px 2px', textAlign: 'center', borderRadius: '6px', background: bg, border: isToday ? '1.5px solid var(--icpc-blue)' : '1px solid transparent', cursor: 'default', minHeight: '40px', display: 'flex', flexDirection: 'column', justifyContent: 'center', alignItems: 'center', gap: '2px' }}>
+                  <span className="text-mono text-micro" style={{ color: isToday ? 'var(--icpc-blue)' : isFuture ? 'var(--text-tertiary)' : 'var(--text-muted)', fontWeight: isToday ? 'bold' : 'normal' }}>{day}</span>
                   {!isFuture && !isBeforeStart && (
                     <span style={{ fontSize: metQuota ? '14px' : '10px', lineHeight: 1 }}>{icon}</span>
                   )}
@@ -2253,12 +2452,12 @@ h1{color:#00d4aa;border-bottom:1px solid #333;padding-bottom:16px}h2{color:#888;
         </div>
 
         {/* Rivals Section */}
-        <div className="glass-panel-outer" style={{ padding: '16px', flexShrink: 0 }}>
+        <div className="cf-card" style={{ padding: '16px', flexShrink: 0 }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px' }}>
-            <h3 className="text-micro text-muted">🎯 DYNAMIC RIVALS — Users {400}-{700} rating above you, actively improving</h3>
+            <h3 className="text-micro text-muted">🎯 DYNAMIC RIVALS — Users 400-700 rating above you, actively improving</h3>
             <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-              {thStatus && <span className="text-mono text-micro text-cyan">{thStatus}</span>}
-              <button onClick={thLoadRivals} disabled={thLoading} className="text-mono text-micro" style={{ background: 'var(--accent-cyan)', color: '#000', border: 'none', borderRadius: '6px', padding: '6px 16px', cursor: thLoading ? 'wait' : 'pointer', fontWeight: 'bold', opacity: thLoading ? 0.7 : 1 }}>
+              {thStatus && <span className="text-mono text-micro text-muted">{thStatus}</span>}
+              <button onClick={thLoadRivals} disabled={thLoading} className="text-mono text-micro" style={{ background: 'var(--icpc-blue)', color: '#000', border: 'none', borderRadius: '6px', padding: '6px 16px', cursor: thLoading ? 'wait' : 'pointer', fontWeight: 'bold', opacity: thLoading ? 0.7 : 1 }}>
                 {thLoading ? '⏳ LOADING...' : (thRivals ? '⟳ REFRESH' : '⚡ FIND RIVALS')}
               </button>
             </div>
@@ -2267,7 +2466,7 @@ h1{color:#00d4aa;border-bottom:1px solid #333;padding-bottom:16px}h2{color:#888;
           {thRivals && thRivals.rivals.length > 0 && (
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '8px', marginBottom: '12px' }}>
               {thRivals.rivals.map((r, i) => (
-                <div key={r.handle} className="glass-panel-outer" style={{ padding: '10px 12px', textAlign: 'center' }}>
+                <div key={r.handle} className="cf-card" style={{ padding: '10px 12px', textAlign: 'center' }}>
                   <a href={`https://codeforces.com/profile/${r.handle}`} target="_blank" rel="noreferrer" className="text-mono text-sm" style={{ color: getCfColor(r.rating), textDecoration: 'none', fontWeight: 'bold' }}>{r.handle}</a>
                   <div className="text-mono text-micro" style={{ color: getCfColor(r.rating), marginTop: '2px' }}>{r.rating}</div>
                   <div className="text-mono text-micro" style={{ color: r.avgDelta > 0 ? '#00ff88' : '#ff4444', marginTop: '2px' }}>
@@ -2318,146 +2517,687 @@ h1{color:#00d4aa;border-bottom:1px solid #333;padding-bottom:16px}h2{color:#888;
     flow: 'implicit',
     onSuccess: async (tokenResponse) => {
       try {
-        const userInfoRes = await fetch('https://www.googleapis.com/oauth2/v3/userinfo', {
-          headers: { Authorization: `Bearer ${tokenResponse.access_token}` }
-        });
-        const userInfo = await userInfoRes.json();
-        const res = await fetch(`${BACKEND}/api/auth/google`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            credential: null,
-            googleId: userInfo.sub,
-            email: userInfo.email,
-            name: userInfo.name,
-            picture: userInfo.picture,
-          })
-        });
-        const data = await res.json();
-        if (data.error) { alert('Google Sign-In failed: ' + data.error); return; }
-        const u = data.user;
-        setUser({ ...u, avatar: u.avatar || userInfo.picture, displayName: userInfo.name });
-        applyUserData(u);
-        // Auto-sync CF profile after Google login
-        if (u.cf_handle) setTimeout(fetchUserProfile, 400);
+        // Step 1: Fetch user info from Google
+        let userInfo;
+        try {
+          const userInfoRes = await fetch('https://www.googleapis.com/oauth2/v3/userinfo', {
+            headers: { Authorization: `Bearer ${tokenResponse.access_token}` }
+          });
+          if (!userInfoRes.ok) throw new Error(`Google API returned ${userInfoRes.status}`);
+          userInfo = await userInfoRes.json();
+        } catch (googleErr) {
+          alert(
+            '⚠️ Google Sign-In failed at the Google step.\n\n' +
+            'Most likely cause: this app\'s URL (localhost:5173) is not added to your Google Cloud Console as an Authorized JavaScript Origin.\n\n' +
+            'Fix: Go to console.cloud.google.com → APIs & Services → Credentials → your OAuth 2.0 Client ID → ' +
+            'Add "http://localhost:5173" to Authorized JavaScript Origins.\n\n' +
+            'In the meantime, use the username/password login below.\n\n' +
+            'Error detail: ' + googleErr.message
+          );
+          return;
+        }
+
+        // Step 2: Register/login with our backend
+        try {
+          const res = await fetch(`${BACKEND}/api/auth/google`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              googleId: userInfo.sub,
+              email: userInfo.email,
+              name: userInfo.name,
+              picture: userInfo.picture,
+            })
+          });
+          const data = await res.json();
+          if (data.error) { alert('Google Sign-In failed: ' + data.error); return; }
+          const u = data.user;
+          setUser({ ...u, avatar: u.avatar || userInfo.picture, displayName: userInfo.name });
+          applyUserData(u);
+          if (u.cf_handle) setTimeout(fetchUserProfile, 400);
+        } catch (backendErr) {
+          alert(
+            '⚠️ Google account verified, but our backend is unreachable.\n\n' +
+            'Make sure the backend is running: open a terminal and run:\n' +
+            'cd backend && node server.js\n\n' +
+            'Error: ' + backendErr.message
+          );
+        }
       } catch (e) {
         alert('Google Sign-In error: ' + e.message);
       }
     },
-    onError: () => alert('Google Sign-In was cancelled or failed.'),
+    onError: (err) => {
+      console.error('Google OAuth error:', err);
+      alert(
+        '⚠️ Google Sign-In popup was cancelled or blocked.\n\n' +
+        'If you saw a popup blocker, allow popups for localhost:5173 and try again.\n\n' +
+        'You can also use username/password login below.'
+      );
+    },
   });
 
   const renderAuth = () => (
-    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', minHeight: '100vh', position: 'relative', backgroundImage: 'url("https://images.unsplash.com/photo-1618221195710-dd6b41faaea6?auto=format&fit=crop&q=80&w=2000")', backgroundSize: 'cover', backgroundPosition: 'center' }}>
-      <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(135deg,rgba(8,14,30,0.75) 0%,rgba(20,8,40,0.65) 100%)', backdropFilter: 'blur(2px)' }}></div>
-      <div style={{ position: 'relative', zIndex: 1, background: 'rgba(22,22,38,0.72)', backdropFilter: 'blur(60px) saturate(220%)', padding: '48px 44px', borderRadius: '32px', border: '1px solid rgba(255,255,255,0.12)', width: '400px', boxShadow: '0 40px 100px rgba(0,0,0,0.65), inset 0 1.5px 0 rgba(255,255,255,0.12)' }}>
-        {/* Logo */}
-        <div style={{ textAlign: 'center', marginBottom: 36 }}>
-          <div style={{ fontSize: 52, marginBottom: 10, filter: 'drop-shadow(0 0 20px rgba(94,207,255,0.5))' }}>⚡</div>
-          <h1 style={{ color: 'white', fontWeight: 200, fontSize: '32px', letterSpacing: '-1px', marginBottom: 6 }}>Coach <span style={{ fontWeight: 800, background: 'linear-gradient(135deg,#5ecfff,#c86eff)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>CP</span></h1>
-          <p style={{ color: 'rgba(255,255,255,0.42)', fontSize: 13, letterSpacing: '0.02em' }}>{isLoginMode ? 'Sign in to your command center' : 'Create your account'}</p>
+    <div className="auth-screen">
+      {/* Left panel — ICPC branding */}
+      <div className="auth-left-panel">
+        <div>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '48px' }}>
+            <MyCPCLogo size="md" />
+            <div>
+              <div style={{ fontSize: '24px', lineHeight: 1, display: 'flex', alignItems: 'baseline' }}>
+                <span style={{ fontFamily: 'Caveat, cursive', color: 'var(--icpc-gold)', fontSize: '1.3em', marginRight: '2px', fontWeight: 700 }}>my</span>
+                <span style={{ fontFamily: 'Inter, sans-serif', color: 'white', fontWeight: 900, letterSpacing: '-0.02em' }}>CPC</span>
+              </div>
+              <div style={{ fontSize: '10px', color: 'rgba(255,255,255,0.45)', textTransform: 'uppercase', letterSpacing: '0.1em', marginTop: '4px' }}>ICPC Coach Platform</div>
+            </div>
+          </div>
+          <div style={{ display: 'inline-flex', alignItems: 'center', background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)', fontSize: '10px', fontWeight: 800, letterSpacing: '0.1em', textTransform: 'uppercase', padding: '4px 12px', borderRadius: '4px', marginBottom: '20px' }}>
+            <span style={{color: 'var(--icpc-blue)'}}>Opportunity</span>
+            <span style={{color: 'rgba(255,255,255,0.3)', margin: '0 6px'}}>·</span>
+            <span style={{color: 'var(--icpc-gold)'}}>Choice</span>
+            <span style={{color: 'rgba(255,255,255,0.3)', margin: '0 6px'}}>·</span>
+            <span style={{color: 'var(--icpc-red)'}}>Growth</span>
+          </div>
+          <h2 style={{ fontSize: '28px', fontWeight: 800, color: 'white', lineHeight: 1.2, marginBottom: '16px' }}>
+            Your Personal<br/>Competitive Programming<br/>Coach
+          </h2>
+          <p style={{ fontSize: '14px', color: 'rgba(255,255,255,0.55)', lineHeight: 1.6, maxWidth: '300px' }}>
+            Designed for ICPC athletes. Track your growth, drill your weak spots, and study grandmaster solutions.
+          </p>
         </div>
-        <input className="auth-input" placeholder="Username" value={authUsername}
-          onChange={e => setAuthUsername(e.target.value)}
-          onKeyDown={e => e.key === 'Enter' && handleAuth()}
-          style={{ marginBottom: 12 }} />
-        <input className="auth-input" type="password" placeholder="Password" value={authPassword}
-          onChange={e => setAuthPassword(e.target.value)}
-          onKeyDown={e => e.key === 'Enter' && handleAuth()}
-          style={{ marginBottom: 20 }} />
-        <button onClick={handleAuth} style={{ width: '100%', padding: '14px', borderRadius: '16px', background: 'linear-gradient(135deg,rgba(94,207,255,0.28),rgba(200,110,255,0.22))', color: 'white', border: '1px solid rgba(94,207,255,0.40)', cursor: 'pointer', fontWeight: 700, fontSize: '14px', letterSpacing: '0.06em', marginBottom: 10 }}>{isLoginMode ? 'SIGN IN' : 'CREATE ACCOUNT'}</button>
-
-        <div style={{ display: 'flex', alignItems: 'center', margin: '18px 0', width: '100%' }}>
-          <div style={{ flex: 1, height: '1px', background: 'rgba(255,255,255,0.12)' }}></div>
-          <span style={{ margin: '0 12px', color: 'rgba(255,255,255,0.38)', fontSize: '11px', letterSpacing: '0.08em', textTransform: 'uppercase' }}>or</span>
-          <div style={{ flex: 1, height: '1px', background: 'rgba(255,255,255,0.12)' }}></div>
+        <div>
+          <div style={{ display: 'flex', gap: '24px' }}>
+            {[['#1A56A0', 'OPPORTUNITY'], ['#F0A800', 'CHOICE'], ['#D1232A', 'GROWTH']].map(([c, l]) => (
+              <div key={l} style={{ textAlign: 'center' }}>
+                <div style={{ width: '8px', height: '8px', borderRadius: '50%', background: c, margin: '0 auto 6px' }}></div>
+                <div style={{ fontSize: '9px', fontWeight: 700, color: 'rgba(255,255,255,0.4)', letterSpacing: '0.1em' }}>{l}</div>
+              </div>
+            ))}
+          </div>
         </div>
+      </div>
 
-        <button onClick={() => googleLogin()} style={{ width: '100%', padding: '12px', borderRadius: '16px', background: 'rgba(255,255,255,0.94)', color: '#1a1a1a', border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '10px', fontSize: '14px', fontWeight: 600, marginBottom: 22, boxShadow: '0 4px 20px rgba(0,0,0,0.25)' }}>
-          <svg viewBox="0 0 24 24" width="18" height="18" xmlns="http://www.w3.org/2000/svg">
-            <path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" fill="#4285F4"/>
-            <path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" fill="#34A853"/>
-            <path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z" fill="#FBBC05"/>
-            <path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" fill="#EA4335"/>
-          </svg>
-          Continue with Google
-        </button>
 
-        <p style={{ color: 'rgba(255,255,255,0.45)', textAlign: 'center', cursor: 'pointer', fontSize: '13px', margin: 0 }} onClick={() => setIsLoginMode(!isLoginMode)}>
-          {isLoginMode ? 'New here? Create an account' : 'Already have an account? Sign in'}
-        </p>
+      {/* Right panel */}
+      <div className="auth-right-panel">
+        <div className="auth-form-box">
+          <h1 style={{ fontSize: '22px', fontWeight: 800, color: 'var(--text-dark)', marginBottom: '4px' }}>
+            {isLoginMode ? 'Sign In' : 'Create Account'}
+          </h1>
+          <p style={{ fontSize: '13px', color: 'var(--text-muted)', marginBottom: '28px' }}>
+            {isLoginMode ? 'Access your coaching dashboard' : 'Start your ICPC journey today'}
+          </p>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '14px', marginBottom: '16px' }}>
+            <div>
+              <label className="form-label">Handle / Username</label>
+              <input type="text" placeholder="e.g. tourist" value={authUsername} onChange={e => setAuthUsername(e.target.value)} onKeyDown={e => e.key === 'Enter' && handleAuth()} />
+            </div>
+            <div>
+              <label className="form-label">Password</label>
+              <input type="password" placeholder="••••••••" value={authPassword} onChange={e => setAuthPassword(e.target.value)} onKeyDown={e => e.key === 'Enter' && handleAuth()} />
+            </div>
+            <button className="btn btn-primary btn-lg" style={{ width: '100%', marginTop: '4px' }} onClick={handleAuth}>
+              {isLoginMode ? 'Sign In →' : 'Create Account →'}
+            </button>
+          </div>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '12px', margin: '20px 0' }}>
+            <div style={{ flex: 1, height: '1px', background: 'var(--border)' }}></div>
+            <span style={{ fontSize: '11px', color: 'var(--text-muted)', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.05em' }}>or</span>
+            <div style={{ flex: 1, height: '1px', background: 'var(--border)' }}></div>
+          </div>
+          <button className="btn btn-ghost" style={{ width: '100%', justifyContent: 'center', gap: '10px' }} onClick={() => googleLogin()}>
+            <svg viewBox="0 0 24 24" width="16" height="16"><path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" fill="#4285F4"/><path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" fill="#34A853"/><path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z" fill="#FBBC05"/><path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" fill="#EA4335"/></svg>
+            Continue with Google
+          </button>
+          <p style={{ textAlign: 'center', marginTop: '24px', fontSize: '13px', color: 'var(--text-muted)' }}>
+            <a onClick={() => setIsLoginMode(!isLoginMode)} style={{ cursor: 'pointer', color: 'var(--icpc-blue)' }}>
+              {isLoginMode ? "Don't have an account? Sign up" : "Already have an account? Sign in"}
+            </a>
+          </p>
+        </div>
       </div>
     </div>
   );
 
   const renderSpatialHome = () => {
     const apps = [
-      { id: 'command_center', name: 'Command Center', icon: <BarChart3 size={36} color="white" />, color: 'rgba(100, 210, 255, 0.8)', bgGradient: 'linear-gradient(135deg, rgba(100, 210, 255, 0.4) 0%, rgba(100, 210, 255, 0.1) 100%)' },
-      { id: 'crucible', name: 'The Crucible', icon: <BrainCircuit size={36} color="white" />, color: 'rgba(255, 159, 10, 0.8)', bgGradient: 'linear-gradient(135deg, rgba(255, 159, 10, 0.4) 0%, rgba(255, 159, 10, 0.1) 100%)' },
-      { id: 'golden_path', name: 'Golden Path', icon: <Sparkles size={36} color="white" />, color: 'rgba(255, 214, 10, 0.8)', bgGradient: 'linear-gradient(135deg, rgba(255, 214, 10, 0.4) 0%, rgba(255, 214, 10, 0.1) 100%)' },
-      { id: 'graveyard', name: 'Graveyard', icon: <Ghost size={36} color="white" />, color: 'rgba(255, 69, 58, 0.8)', bgGradient: 'linear-gradient(135deg, rgba(255, 69, 58, 0.4) 0%, rgba(255, 69, 58, 0.1) 100%)' },
-      { id: 'palantir_hub', name: 'Palantir Hub', icon: <Eye size={36} color="white" />, color: 'rgba(191, 90, 242, 0.8)', bgGradient: 'linear-gradient(135deg, rgba(191, 90, 242, 0.4) 0%, rgba(191, 90, 242, 0.1) 100%)' },
-      { id: 'training_hub', name: 'Training Hub', icon: <Flame size={36} color="white" />, color: 'rgba(48, 209, 88, 0.8)', bgGradient: 'linear-gradient(135deg, rgba(48, 209, 88, 0.4) 0%, rgba(48, 209, 88, 0.1) 100%)' },
-      { id: 'skill_tree', name: 'Skill Tree', icon: <Dna size={36} color="white" />, color: 'rgba(0, 255, 204, 0.8)', bgGradient: 'linear-gradient(135deg, rgba(0, 255, 204, 0.4) 0%, rgba(0, 255, 204, 0.1) 100%)' },
-      { id: 'settings', name: 'Settings', icon: <Settings size={36} color="white" />, color: 'rgba(142, 142, 147, 0.8)', bgGradient: 'linear-gradient(135deg, rgba(142, 142, 147, 0.4) 0%, rgba(142, 142, 147, 0.1) 100%)' },
+      { id: 'command_center', name: 'Command Center', desc: 'Rating curve, heatmap & run-rate', icon: <BarChart3 size={22} />, color: 'blue' },
+      { id: 'training_hub',   name: 'Training Hub',   desc: 'Daily cycles & drills',           icon: <Flame size={22} />,      color: 'red' },
+      { id: 'crucible',       name: 'Socratic Coach', desc: 'AI-guided hint system',           icon: <BrainCircuit size={22} />, color: 'gold' },
+      { id: 'graveyard',      name: 'Spaced Repetition', desc: 'Ebbinghaus review queue',     icon: <Ghost size={22} />,      color: 'navy' },
+      { id: 'topic_explorer', name: 'Topic Explorer', desc: 'Curated problem sets by tag',    icon: <Target size={22} />,     color: 'blue' },
+      { id: 'golden_path',    name: 'Golden Path',    desc: 'Cohort intersection problems',   icon: <Sparkles size={22} />,   color: 'gold' },
+      { id: 'palantir_hub',   name: 'Palantir Intel', desc: 'Deep competitive analytics',     icon: <Eye size={22} />,        color: 'navy' },
+      { id: 'code_explorer',  name: 'GM Explorer',    desc: 'Study grandmaster solutions',    icon: <BarChart3 size={22} />,  color: 'green' },
+      { id: 'skill_tree',     name: 'Skill Tree',     desc: '3D topic proficiency map',       icon: <Dna size={22} />,        color: 'blue' },
+      { id: 'complexity_analyzer', name: 'DACE Analyzer', desc: 'Extract Big-O from code',   icon: <Cpu size={22} />,        color: 'navy' },
+      { id: 'memory_profiler', name: 'Cache Profiler', desc: 'Memory & cache analysis',    icon: <Zap size={22} />,        color: 'red' },
+      { id: 'contest_simulator', name: 'EV Engine',    desc: 'Submit vs stress-test EV',   icon: <Gauge size={22} />,      color: 'gold' },
+      { id: 'telemetry',      name: 'Telemetry',      desc: 'Behavioral micro-analytics', icon: <Activity size={22} />,   color: 'blue' },
+      { id: 'drawdown',       name: 'Drawdown',       desc: 'Stamina & recovery profiler',icon: <TrendingUp size={22} />, color: 'red' },
+      { id: 'settings',       name: 'Settings',       desc: 'Handles, goals & API keys',  icon: <Settings size={22} />,   color: 'gray' },
     ];
+    const currentRating = profile.rating || 0;
     return (
-      <div className="spatial-home-container" style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', backgroundImage: 'url("https://images.unsplash.com/photo-1618221195710-dd6b41faaea6?auto=format&fit=crop&q=80&w=2000")', backgroundSize: 'cover', backgroundPosition: 'center', minHeight: '100vh', position: 'relative' }}>
-        <div style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, background: 'rgba(0,0,0,0.3)', zIndex: 0 }}></div>
-        
-        {/* Top Bar Navigation */}
-        <div style={{ position: 'absolute', top: '40px', right: '40px', color: 'white', display: 'flex', gap: '20px', alignItems: 'center', zIndex: 10 }}>
-          <span className="text-mono" style={{ background: 'rgba(255,255,255,0.1)', padding: '10px 20px', borderRadius: '30px', backdropFilter: 'blur(30px)', border: '1px solid rgba(255,255,255,0.2)', boxShadow: '0 4px 20px rgba(0,0,0,0.3)' }}>{user.username}</span>
-          <button style={{ background: 'rgba(255,255,255,0.15)', color: 'white', padding: '10px 20px', borderRadius: '30px', border: '1px solid rgba(255,255,255,0.3)', backdropFilter: 'blur(30px)', cursor: 'pointer', transition: 'all 0.3s ease', boxShadow: '0 4px 20px rgba(0,0,0,0.3)' }} onClick={() => setUser(null)} onMouseEnter={(e) => e.target.style.background = 'rgba(255,255,255,0.25)'} onMouseLeave={(e) => e.target.style.background = 'rgba(255,255,255,0.15)'}>Logout</button>
-        </div>
-
-        {/* Floating Clock / Header */}
-        <div style={{ marginBottom: '60px', textAlign: 'center', position: 'relative', zIndex: 1 }}>
-          <h1 style={{ color: 'white', fontSize: '72px', fontWeight: '200', letterSpacing: '-2px', textShadow: '0 10px 30px rgba(0,0,0,0.5)' }}>
-            {new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-          </h1>
-          <p style={{ color: 'rgba(255,255,255,0.8)', fontSize: '20px', fontWeight: '400', marginTop: '10px', textShadow: '0 4px 10px rgba(0,0,0,0.3)' }}>
-            {new Date().toLocaleDateString([], { weekday: 'long', month: 'long', day: 'numeric' })}
-          </p>
-        </div>
-
-        {/* Beautiful Apple visionOS App Grid */}
-        <div className="spatial-app-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '50px 40px', padding: '20px', perspective: '1000px', position: 'relative', zIndex: 1 }}>
-          {apps.map(app => (
-            <div key={app.id} 
-              style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '16px', cursor: 'pointer', transition: 'transform 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275)' }}
-              onClick={() => { setActiveView(app.id); setIsSpatialHome(false); }}
-              onMouseEnter={(e) => e.currentTarget.style.transform = 'scale(1.15) translateZ(30px)'}
-              onMouseLeave={(e) => e.currentTarget.style.transform = 'scale(1) translateZ(0)'}
-            >
-              <div style={{ 
-                width: '100px', height: '100px', 
-                background: app.bgGradient,
-                borderRadius: '50%', 
-                display: 'flex', alignItems: 'center', justifyContent: 'center',
-                boxShadow: `0 15px 35px rgba(0,0,0,0.5), inset 0 2px 5px rgba(255,255,255,0.4), inset 0 -2px 5px rgba(0,0,0,0.3)`,
-                border: `1px solid rgba(255,255,255,0.2)`,
-                backdropFilter: 'blur(30px) saturate(200%)',
-                position: 'relative',
-                overflow: 'hidden'
-              }}>
-                <div style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, background: app.color, opacity: 0.15 }}></div>
-                <div style={{ position: 'absolute', top: 0, left: '20%', right: '20%', height: '1px', background: 'linear-gradient(90deg, transparent, rgba(255,255,255,0.6), transparent)' }}></div>
-                <div style={{ zIndex: 2, filter: 'drop-shadow(0 2px 4px rgba(0,0,0,0.4))' }}>
-                  {app.icon}
-                </div>
-              </div>
-              <span style={{ color: 'white', fontSize: '14px', fontWeight: '500', textShadow: '0 2px 4px rgba(0,0,0,0.8)', letterSpacing: '0.3px', background: 'rgba(0,0,0,0.2)', padding: '4px 12px', borderRadius: '12px', backdropFilter: 'blur(10px)' }}>{app.name}</span>
+      <div className="spatial-home-screen">
+        {/* Hero Banner */}
+        <div className="home-hero-banner">
+          <div className="home-hero-left">
+            <div style={{ background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)', fontSize: '9px', fontWeight: 900, letterSpacing: '0.12em', textTransform: 'uppercase', padding: '3px 10px', borderRadius: '4px', display: 'inline-block', marginBottom: '12px' }}>
+              <span style={{color: 'var(--icpc-blue)'}}>Opportunity</span>
+              <span style={{color: 'rgba(255,255,255,0.3)', margin: '0 6px'}}>·</span>
+              <span style={{color: 'var(--icpc-gold)'}}>Choice</span>
+              <span style={{color: 'rgba(255,255,255,0.3)', margin: '0 6px'}}>·</span>
+              <span style={{color: 'var(--icpc-red)'}}>Growth</span>
             </div>
-          ))}
+            <h1>Welcome back, <span>{cfHandle}</span></h1>
+            <p>{new Date().toLocaleDateString([], { weekday: 'long', month: 'long', day: 'numeric', year: 'numeric' })} · Your competitive programming coach is ready.</p>
+          </div>
+          <div className="home-hero-stats">
+            <div className="home-hero-stat">
+              <div className="home-hero-stat-label">Rating</div>
+              <div className="home-hero-stat-value" style={{ color: getCfColor(currentRating) || 'white', fontSize: '24px' }}>{currentRating || '—'}</div>
+            </div>
+            <div className="home-hero-stat">
+              <div className="home-hero-stat-label">SR Queue</div>
+              <div className="home-hero-stat-value" style={{ color: srQueue.length > 0 ? 'var(--icpc-gold)' : 'white' }}>{srQueue.length}</div>
+            </div>
+            <div className="home-hero-stat">
+              <div className="home-hero-stat-label">Rank</div>
+              <div className="home-hero-stat-value" style={{ fontSize: '14px' }}>{profile.rank || '—'}</div>
+            </div>
+            <div style={{ paddingLeft: '24px' }}>
+              <button className="btn btn-gold" onClick={() => setUser(null)} style={{ fontSize: '12px', padding: '7px 14px' }}>Sign Out</button>
+            </div>
+          </div>
+        </div>
+
+        {/* App Grid */}
+        <div className="home-app-grid-container">
+          <div className="home-app-grid">
+            {apps.map(app => (
+              <div key={app.id} className="app-tile" onClick={() => { setActiveView(app.id); setIsSpatialHome(false); }}>
+                <div className={`app-tile-icon ${app.color}`}>{app.icon}</div>
+                <div className="app-tile-name">{app.name}</div>
+                <div className="app-tile-desc">{app.desc}</div>
+              </div>
+            ))}
+          </div>
         </div>
       </div>
     );
   };
 
+
+  // ══════════════════════════════════════════════════════════════════════
+  // DACE — Deterministic Algorithmic Complexity Extraction
+  // ══════════════════════════════════════════════════════════════════════
+  const analyzeDACE = (src) => {
+    if (!src.trim()) return;
+    let maxDepth = 0, curDepth = 0, hasSort = false, hasBinarySearch = false, hasLog = false;
+    const lines = src.split('\n');
+    for (const line of lines) {
+      const t = line.trim();
+      if (/\bfor\s*\(/.test(t) || /\bwhile\s*\(/.test(t)) { curDepth++; maxDepth = Math.max(maxDepth, curDepth); }
+      if (t === '}') curDepth = Math.max(0, curDepth - 1);
+      if (/sort\s*\(/.test(t)) hasSort = true;
+      if (/lower_bound|upper_bound|binary_search|bisect/.test(t)) hasBinarySearch = true;
+      if (/log2?\s*\(|__lg\s*\(/.test(t)) hasLog = true;
+    }
+    let complexity = '', ops = 0, verdict = 'SAFE';
+    const N = 200000; // typical constraint
+    if (maxDepth <= 1 && (hasSort || hasBinarySearch)) {
+      complexity = 'O(N log N)'; ops = N * Math.log2(N);
+    } else if (maxDepth <= 1) {
+      complexity = 'O(N)'; ops = N;
+    } else if (maxDepth === 2 && hasLog) {
+      complexity = 'O(N² log N)'; ops = N * N * Math.log2(N); verdict = 'CRITICAL';
+    } else if (maxDepth === 2) {
+      complexity = 'O(N²)'; ops = N * N; verdict = ops > 1e8 ? 'DANGER' : 'BORDERLINE';
+    } else if (maxDepth === 3) {
+      complexity = 'O(N³)'; ops = N * N * N; verdict = 'CRITICAL';
+    } else {
+      complexity = `O(N^${maxDepth})`; ops = Math.pow(N, maxDepth); verdict = 'CRITICAL';
+    }
+    if (ops <= 1e8) verdict = 'SAFE';
+    else if (ops <= 5e8) verdict = 'DANGER';
+    else verdict = 'CRITICAL';
+    setDaceResult({ complexity, ops, verdict, maxDepth, hasSort, hasBinarySearch, N,
+      detail: `Detected ${maxDepth} nested loop(s)${hasSort ? ' + sort()' : ''}${hasBinarySearch ? ' + binary search' : ''}. At N=${fmt(N)}: ~${ops.toExponential(1)} operations.`
+    });
+  };
+
+  const renderComplexityAnalyzer = () => (
+    <div>
+      <div className="page-header">
+        <div>
+          <div className="page-header-title"><Cpu size={20} className="page-header-title-accent" /> <span>DACE</span> — Deterministic Complexity Extraction</div>
+          <div className="page-header-subtitle">Paste your code. We extract the exact Big-O, count operations at N=200,000, and enforce the 10⁸ threshold.</div>
+        </div>
+      </div>
+      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '20px' }}>
+        <div className="cf-card" style={{ padding: '20px' }}>
+          <div className="cf-card-title" style={{ marginBottom: '12px' }}>Source Code</div>
+          <textarea
+            value={daceCode}
+            onChange={e => setDaceCode(e.target.value)}
+            placeholder={"#include <bits/stdc++.h>\nusing namespace std;\n\nint main() {\n    int n; cin >> n;\n    vector<int> a(n);\n    for (int i = 0; i < n; i++) cin >> a[i];\n    sort(a.begin(), a.end());\n    // ...\n}"}
+            style={{ width: '100%', height: '320px', fontFamily: 'var(--font-mono)', fontSize: '12px', padding: '12px', border: '1px solid var(--border)', borderRadius: 'var(--radius-sm)', resize: 'vertical', background: 'var(--bg-code)', color: 'var(--text-body)' }}
+          />
+          <button className="btn btn-primary" style={{ width: '100%', marginTop: '12px' }} onClick={() => analyzeDACE(daceCode)}>
+            <Cpu size={14} /> Extract Complexity
+          </button>
+        </div>
+        <div className="cf-card" style={{ padding: '20px' }}>
+          <div className="cf-card-title" style={{ marginBottom: '12px' }}>Analysis Result</div>
+          {daceResult ? (
+            <div>
+              <div style={{ textAlign: 'center', padding: '24px 0 16px' }}>
+                <div style={{ fontSize: '48px', fontFamily: 'var(--font-mono)', fontWeight: 900, color: daceResult.verdict === 'SAFE' ? 'var(--icpc-green)' : daceResult.verdict === 'DANGER' ? 'var(--cf-tle-orange)' : 'var(--icpc-red)' }}>{daceResult.complexity}</div>
+                <div className={`badge ${daceResult.verdict === 'SAFE' ? 'badge-green' : daceResult.verdict === 'DANGER' ? 'badge-orange' : 'badge-red'}`} style={{ fontSize: '13px', padding: '4px 16px', marginTop: '8px' }}>{daceResult.verdict}</div>
+              </div>
+              <div className="alert alert-info" style={{ marginTop: '16px' }}>
+                <div><strong>Operations at N={fmt(daceResult.N)}:</strong> {daceResult.ops.toExponential(2)}</div>
+              </div>
+              <div className={`alert ${daceResult.verdict === 'SAFE' ? 'alert-success' : 'alert-error'}`}>
+                {daceResult.verdict === 'SAFE' ? '✅ Within 10⁸ threshold. Safe to submit.' : '⚠️ Exceeds 10⁸ operations. Will likely TLE. Optimize your approach.'}
+              </div>
+              <div style={{ marginTop: '12px', padding: '12px', background: 'var(--bg-code)', borderRadius: 'var(--radius-sm)', fontSize: '13px', color: 'var(--text-muted)' }}>{daceResult.detail}</div>
+              <table className="cf-table" style={{ marginTop: '16px' }}>
+                <tbody>
+                  <tr><td style={{ fontWeight: 700 }}>Loop Nesting Depth</td><td className="text-mono">{daceResult.maxDepth}</td></tr>
+                  <tr><td style={{ fontWeight: 700 }}>sort() Detected</td><td>{daceResult.hasSort ? '✅ Yes' : '❌ No'}</td></tr>
+                  <tr><td style={{ fontWeight: 700 }}>Binary Search Detected</td><td>{daceResult.hasBinarySearch ? '✅ Yes' : '❌ No'}</td></tr>
+                  <tr><td style={{ fontWeight: 700 }}>Threshold (10⁸ ops/sec)</td><td className="text-mono">100,000,000</td></tr>
+                  <tr><td style={{ fontWeight: 700 }}>Your Operations</td><td className="text-mono" style={{ color: daceResult.ops <= 1e8 ? 'var(--icpc-green)' : 'var(--icpc-red)' }}>{daceResult.ops.toExponential(2)}</td></tr>
+                </tbody>
+              </table>
+            </div>
+          ) : (
+            <div style={{ textAlign: 'center', padding: '80px 20px', color: 'var(--text-muted)' }}>
+              <Cpu size={48} style={{ opacity: 0.2, marginBottom: '16px' }} />
+              <p style={{ fontSize: '14px' }}>Paste your C++/Python code and click <strong>Extract Complexity</strong>.</p>
+              <p style={{ fontSize: '12px', marginTop: '8px' }}>The analyzer counts nested loops, detects sort/binary-search patterns, and mathematically proves your Big-O.</p>
+            </div>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+
+  // ══════════════════════════════════════════════════════════════════════
+  // Memory & Cache Profiler
+  // ══════════════════════════════════════════════════════════════════════
+  const analyzeMemory = (src) => {
+    if (!src.trim()) return;
+    const issues = [];
+    const lines = src.split('\n');
+    lines.forEach((line, idx) => {
+      if (/\[\s*j\s*\]\s*\[\s*i\s*\]/.test(line)) {
+        issues.push({ line: idx + 1, type: 'COL_MAJOR', severity: 'HIGH', text: `Column-major access: arr[j][i] — cache-unfriendly. Swap to arr[i][j] for row-major (spatial locality).`, fix: 'Transpose loop order: outer loop on rows (i), inner on columns (j).' });
+      }
+      if (/struct\s+\w+\s*\{/.test(line)) {
+        issues.push({ line: idx + 1, type: 'STRUCT_PACK', severity: 'MEDIUM', text: `Struct declared. Ensure fields are ordered by size (largest first) to minimize padding.`, fix: 'Order: long long > int > short > char. Use __attribute__((packed)) if critical.' });
+      }
+      if (/vector\s*<\s*vector/.test(line)) {
+        issues.push({ line: idx + 1, type: 'VEC_OF_VEC', severity: 'HIGH', text: `vector<vector<>> detected. Non-contiguous memory = frequent cache misses.`, fix: 'Use a flattened 1D array: arr[i * cols + j] for contiguous memory layout.' });
+      }
+      if (/map\s*</.test(line) && !/unordered_map/.test(line)) {
+        issues.push({ line: idx + 1, type: 'ORDERED_MAP', severity: 'MEDIUM', text: `std::map (red-black tree) — O(log N) with pointer chasing. Very cache-unfriendly.`, fix: 'Use unordered_map (O(1) amortized) or a sorted vector with binary search.' });
+      }
+    });
+    setMemResult({ issues, lineCount: lines.length });
+  };
+
+  const renderMemoryProfiler = () => (
+    <div>
+      <div className="page-header">
+        <div>
+          <div className="page-header-title"><Zap size={20} className="page-header-title-accent" /> Cache-Miss & Memory Profiler</div>
+          <div className="page-header-subtitle">Scans array traversals, struct packing, and container choices for CPU cache efficiency. Think like a low-latency systems engineer.</div>
+        </div>
+      </div>
+      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '20px' }}>
+        <div className="cf-card" style={{ padding: '20px' }}>
+          <div className="cf-card-title" style={{ marginBottom: '12px' }}>Source Code</div>
+          <textarea value={memCode} onChange={e => setMemCode(e.target.value)} placeholder={"// Paste your C++ code here\nint dp[5001][5001];\nfor (int j = 0; j < n; j++)\n  for (int i = 0; i < m; i++)\n    dp[j][i] = dp[j-1][i] + 1;"} style={{ width: '100%', height: '300px', fontFamily: 'var(--font-mono)', fontSize: '12px', padding: '12px', border: '1px solid var(--border)', borderRadius: 'var(--radius-sm)', resize: 'vertical', background: 'var(--bg-code)' }} />
+          <button className="btn btn-primary" style={{ width: '100%', marginTop: '12px' }} onClick={() => analyzeMemory(memCode)}>
+            <Zap size={14} /> Profile Memory Access
+          </button>
+        </div>
+        <div className="cf-card" style={{ padding: '20px' }}>
+          <div className="cf-card-title" style={{ marginBottom: '12px' }}>Cache Analysis ({memResult ? memResult.issues.length : 0} issues)</div>
+          {memResult && memResult.issues.length > 0 ? (
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+              {memResult.issues.map((iss, i) => (
+                <div key={i} className={`alert ${iss.severity === 'HIGH' ? 'alert-error' : 'alert-warn'}`} style={{ flexDirection: 'column', gap: '6px' }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                    <strong>Line {iss.line}: {iss.type}</strong>
+                    <span className={`badge ${iss.severity === 'HIGH' ? 'badge-red' : 'badge-gold'}`}>{iss.severity}</span>
+                  </div>
+                  <div style={{ fontSize: '13px' }}>{iss.text}</div>
+                  <div style={{ fontSize: '12px', color: 'var(--icpc-blue)', fontWeight: 600 }}>🔧 Fix: {iss.fix}</div>
+                </div>
+              ))}
+              <div className="cf-card" style={{ marginTop: '8px', padding: '14px', borderTop: '3px solid var(--icpc-blue)' }}>
+                <div className="cf-card-title" style={{ marginBottom: '8px' }}>Cache-Line Primer (64 bytes)</div>
+                <div style={{ display: 'flex', gap: '2px', marginBottom: '8px' }}>
+                  {Array.from({length: 16}).map((_, i) => (
+                    <div key={i} style={{ flex: 1, height: '24px', background: i < 4 ? 'var(--icpc-blue)' : 'var(--bg-code)', border: '1px solid var(--border)', borderRadius: '1px', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '8px', fontFamily: 'var(--font-mono)', color: i < 4 ? 'white' : 'var(--text-muted)' }}>{i * 4}</div>
+                  ))}
+                </div>
+                <div style={{ fontSize: '11px', color: 'var(--text-muted)' }}>Each block = 4 bytes (one int). A cache line loads 16 ints at once. Row-major access reads sequentially; column-major jumps across lines.</div>
+              </div>
+            </div>
+          ) : (
+            <div style={{ textAlign: 'center', padding: '80px 20px', color: 'var(--text-muted)' }}>
+              <Zap size={48} style={{ opacity: 0.2, marginBottom: '16px' }} />
+              <p>Paste code to scan for cache-unfriendly patterns.</p>
+            </div>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+
+  // ══════════════════════════════════════════════════════════════════════
+  // Submission EV & Risk Engine (Contest Simulator)
+  // ══════════════════════════════════════════════════════════════════════
+  const calcEV = () => {
+    const pAC = evConfidence / 100;
+    const pWA = 1 - pAC;
+    const timeSavedIfAC = 120 - evMinutesIn; // minutes saved
+    const penaltyCostIfWA = evPenalty; // minutes penalty
+    const evSubmit = pAC * timeSavedIfAC - pWA * penaltyCostIfWA;
+    const evStressTester = -5 + 0.95 * timeSavedIfAC; // 5 min cost, 95% AC after
+    const tiltScore = pWA > 0.4 && evMinutesIn > 60 ? 'HIGH' : pWA > 0.25 ? 'MODERATE' : 'LOW';
+    setEvResult({ pAC, pWA, evSubmit: evSubmit.toFixed(1), evStressTester: evStressTester.toFixed(1), recommendation: evSubmit > evStressTester ? 'SUBMIT' : 'STRESS TEST', tiltScore });
+  };
+
+  const renderContestSimulator = () => (
+    <div>
+      <div className="page-header">
+        <div>
+          <div className="page-header-title"><Gauge size={20} className="page-header-title-accent" /> Submission EV & Risk Engine</div>
+          <div className="page-header-subtitle">Calculate the expected value of submitting vs. stress-testing. Treat your contest like a high-stakes trading floor.</div>
+        </div>
+      </div>
+      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '20px' }}>
+        <div className="cf-card" style={{ padding: '20px' }}>
+          <div className="cf-card-title" style={{ marginBottom: '16px' }}>Scenario Parameters</div>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+            <div>
+              <label className="form-label">Minutes Into Contest</label>
+              <input type="range" min="5" max="120" value={evMinutesIn} onChange={e => setEvMinutesIn(+e.target.value)} style={{ width: '100%' }} />
+              <div className="text-mono text-sm" style={{ marginTop: '4px' }}>{evMinutesIn} min / 120 min</div>
+            </div>
+            <div>
+              <label className="form-label">Confidence in Solution (%)</label>
+              <input type="range" min="10" max="99" value={evConfidence} onChange={e => setEvConfidence(+e.target.value)} style={{ width: '100%' }} />
+              <div className="text-mono text-sm" style={{ marginTop: '4px', color: evConfidence > 80 ? 'var(--icpc-green)' : evConfidence > 50 ? 'var(--icpc-gold)' : 'var(--icpc-red)' }}>{evConfidence}% confident</div>
+            </div>
+            <div>
+              <label className="form-label">WA Penalty (minutes)</label>
+              <input type="number" value={evPenalty} onChange={e => setEvPenalty(+e.target.value)} />
+            </div>
+            <button className="btn btn-primary" style={{ width: '100%' }} onClick={calcEV}>
+              <Gauge size={14} /> Calculate Expected Value
+            </button>
+          </div>
+        </div>
+        <div className="cf-card" style={{ padding: '20px' }}>
+          <div className="cf-card-title" style={{ marginBottom: '16px' }}>Decision Matrix</div>
+          {evResult ? (
+            <div>
+              <div style={{ textAlign: 'center', padding: '20px 0' }}>
+                <div style={{ fontSize: '14px', color: 'var(--text-muted)', marginBottom: '4px' }}>RECOMMENDED ACTION</div>
+                <div style={{ fontSize: '32px', fontWeight: 900, fontFamily: 'var(--font-mono)', color: evResult.recommendation === 'SUBMIT' ? 'var(--icpc-green)' : 'var(--icpc-blue)' }}>{evResult.recommendation}</div>
+              </div>
+              <table className="cf-table" style={{ marginTop: '12px' }}>
+                <thead><tr><th>Metric</th><th>Value</th></tr></thead>
+                <tbody>
+                  <tr><td>P(AC)</td><td className="text-mono" style={{ color: 'var(--icpc-green)' }}>{(evResult.pAC * 100).toFixed(0)}%</td></tr>
+                  <tr><td>P(WA)</td><td className="text-mono" style={{ color: 'var(--icpc-red)' }}>{(evResult.pWA * 100).toFixed(0)}%</td></tr>
+                  <tr><td>EV(Submit Now)</td><td className="text-mono" style={{ color: evResult.evSubmit > 0 ? 'var(--icpc-green)' : 'var(--icpc-red)' }}>{evResult.evSubmit > 0 ? '+' : ''}{evResult.evSubmit} min</td></tr>
+                  <tr><td>EV(Stress Test)</td><td className="text-mono">{evResult.evStressTester > 0 ? '+' : ''}{evResult.evStressTester} min</td></tr>
+                </tbody>
+              </table>
+              <div className={`alert ${evResult.tiltScore === 'HIGH' ? 'alert-error' : evResult.tiltScore === 'MODERATE' ? 'alert-warn' : 'alert-success'}`} style={{ marginTop: '12px' }}>
+                <strong>Tilt Risk: {evResult.tiltScore}</strong>
+                {evResult.tiltScore === 'HIGH' && ' — Your behavior resembles panic-submitting. Step back, breathe, stress test.'}
+                {evResult.tiltScore === 'MODERATE' && ' — Borderline. Consider a quick brute-force check.'}
+                {evResult.tiltScore === 'LOW' && ' — You are in control. Execute your plan.'}
+              </div>
+            </div>
+          ) : (
+            <div style={{ textAlign: 'center', padding: '80px 20px', color: 'var(--text-muted)' }}>
+              <Gauge size={48} style={{ opacity: 0.2, marginBottom: '16px' }} />
+              <p>Set your scenario parameters and calculate.</p>
+              <p style={{ fontSize: '12px', marginTop: '8px' }}>EV = P(AC) × time_saved − P(WA) × penalty_cost</p>
+            </div>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+
+  // ══════════════════════════════════════════════════════════════════════
+  // Micro-Decision Telemetry Dashboard
+  // ══════════════════════════════════════════════════════════════════════
+  const generateTelemetry = async () => {
+    if (!cfHandle) { alert('Set a CF handle first in Settings.'); return; }
+    try {
+      // Fetch real DNA profile data
+      const [profileRes, historyRes] = await Promise.all([
+        fetch(`${BACKEND}/api/dna/profile/${cfHandle}`),
+        fetch(`${BACKEND}/api/dna/history/${cfHandle}`)
+      ]);
+      const profileData = await profileRes.json();
+      const historyData = await historyRes.json();
+
+      const sessions = historyData.sessions || [];
+      if (sessions.length < 2) {
+        alert('Not enough DNA sessions yet. Solve at least 2 problems with the VS Code extension to generate a profile.');
+        return;
+      }
+
+      const avgSolveTime = sessions.reduce((s, x) => s + (x.solve_time_sec || 0), 0) / sessions.length / 60;
+      const avgWAs = sessions.reduce((s, x) => s + (x.wa_count || 0), 0) / sessions.length;
+      const avgEditVelocity = sessions.reduce((s, x) => s + (x.edit_velocity || 0), 0) / sessions.length;
+      const avgHesitations = sessions.reduce((s, x) => s + (x.hesitation_count || 0), 0) / sessions.length;
+
+      const dna = profileData.profile || {};
+      const archetypes = [
+        avgEditVelocity > 40 && avgHesitations < 3 ? 'Fast Typer / Minimal Thinking Time' :
+        avgHesitations > 5 && avgEditVelocity < 25 ? 'Deep Thinker / Precise Implementer' :
+        avgWAs > 2.5 ? 'Aggressive Submitter / High WA Rate' :
+        'Balanced Strategist'
+      ];
+
+      const profile = {
+        archetype: archetypes[0],
+        avgReadTime: 'N/A (tracked via Chrome ext)',
+        avgCodeTime: `${avgSolveTime.toFixed(1)} min`,
+        avgDebugTime: `${(avgWAs * 4).toFixed(1)} min est.`,
+        editVelocity: Math.round(avgEditVelocity) || 0,
+        tabSwitches: Math.round(avgHesitations) || 0,
+        testRunsBeforeSubmit: (sessions.reduce((s, x) => s + (x.test_runs || 1), 0) / sessions.length).toFixed(1),
+        sessionCount: sessions.length,
+        radar: {
+          speed: Math.min(100, dna.speed || 50),
+          accuracy: Math.min(100, dna.accuracy || 50),
+          endurance: Math.min(100, 100 - (avgWAs * 10)),
+          focus: Math.min(100, 100 - (avgHesitations * 8)),
+          breadth: Math.min(100, (dna.problem_diversity || 30))
+        }
+      };
+      setTelemetryProfile(profile);
+    } catch(e) {
+      alert('Could not load DNA data. Make sure the backend is running: ' + e.message);
+    }
+  };
+
+  const renderTelemetry = () => (
+    <div>
+      <div className="page-header">
+        <div>
+          <div className="page-header-title"><Activity size={20} className="page-header-title-accent" /> Micro-Decision Telemetry</div>
+          <div className="page-header-subtitle">Records how you spend every second during a problem. Identifies your archetype and generates targeted drills.</div>
+        </div>
+      </div>
+      <div className="cf-card" style={{ padding: '20px', marginBottom: '16px' }}>
+        <button className="btn btn-primary" onClick={generateTelemetry}><Activity size={14} /> Generate Behavioral Profile</button>
+        <span style={{ marginLeft: '12px', fontSize: '12px', color: 'var(--text-muted)' }}>Analyzes your last 50 problem sessions</span>
+      </div>
+      {telemetryProfile && (
+        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '16px' }}>
+          <div className="cf-card border-gold-top" style={{ padding: '20px', gridColumn: 'span 3' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
+              <div style={{ fontSize: '28px', fontWeight: 900, color: 'var(--icpc-navy)' }}>{telemetryProfile.archetype}</div>
+              <div className="badge badge-gold" style={{ fontSize: '13px', padding: '4px 12px' }}>YOUR ARCHETYPE</div>
+            </div>
+          </div>
+          {[
+            { label: 'Avg. Read Time', value: `${telemetryProfile.avgReadTime} min`, icon: '📖' },
+            { label: 'Avg. Code Time', value: `${telemetryProfile.avgCodeTime} min`, icon: '⌨️' },
+            { label: 'Avg. Debug Time', value: `${telemetryProfile.avgDebugTime} min`, icon: '🐛' },
+            { label: 'Edit Velocity', value: `${telemetryProfile.editVelocity} chars/min`, icon: '⚡' },
+            { label: 'Tab Switches', value: `${telemetryProfile.tabSwitches}/session`, icon: '🔄' },
+            { label: 'Test Runs Before Submit', value: telemetryProfile.testRunsBeforeSubmit, icon: '🧫' },
+          ].map((m, i) => (
+            <div key={i} className="stat-card">
+              <div className="stat-card-label">{m.icon} {m.label}</div>
+              <div className="stat-card-value">{m.value}</div>
+            </div>
+          ))}
+          <div className="cf-card" style={{ gridColumn: 'span 3', padding: '20px' }}>
+            <div className="cf-card-title" style={{ marginBottom: '12px' }}>Performance Radar</div>
+            <div style={{ display: 'flex', justifyContent: 'space-around', padding: '20px 0' }}>
+              {Object.entries(telemetryProfile.radar).map(([k, v]) => (
+                <div key={k} style={{ textAlign: 'center' }}>
+                  <div style={{ width: '60px', height: '60px', borderRadius: '50%', border: `4px solid ${v > 70 ? 'var(--icpc-green)' : v > 40 ? 'var(--icpc-gold)' : 'var(--icpc-red)'}`, display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 6px' }}>
+                    <span className="text-mono" style={{ fontWeight: 800, fontSize: '16px' }}>{Math.round(v)}</span>
+                  </div>
+                  <div style={{ fontSize: '11px', fontWeight: 700, textTransform: 'uppercase', color: 'var(--text-muted)' }}>{k}</div>
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+
+  // ══════════════════════════════════════════════════════════════════════
+  // Performance Drawdown & Recovery Profiler
+  // ══════════════════════════════════════════════════════════════════════
+  const generateDrawdown = () => {
+    // Derive real metrics from the already-fetched ratingCurve
+    if (ratingCurve.length < 3) {
+      alert('Not enough rating history to compute drawdown. Sync your CF profile and participate in contests first.');
+      return;
+    }
+
+    const ratings = ratingCurve.map(p => p.rating);
+    const changes = ratings.slice(1).map((r, i) => r - ratings[i]);
+    const negChanges = changes.filter(c => c < 0);
+    const posChanges = changes.filter(c => c > 0);
+
+    const maxRating = Math.max(...ratings);
+    const minAfterPeak = Math.min(...ratings.slice(ratings.indexOf(maxRating)));
+    const maxDrawdown = maxRating - minAfterPeak;
+
+    const ratingVol = Math.round(Math.sqrt(changes.reduce((s, c) => s + c * c, 0) / changes.length));
+    const recoverySpeed = posChanges.length > 0 ?
+      (posChanges.reduce((s, c) => s + c, 0) / posChanges.length).toFixed(0) : 0;
+    const worstLoss = negChanges.length > 0 ? Math.min(...negChanges).toFixed(0) : 0;
+
+    // Stamina curve: performance over contests (last 12 rated contests)
+    const last12 = ratings.slice(-12);
+    const staminaCurve = last12.map((r, i) => ({
+      min: i + 1,
+      perf: Math.max(0, Math.min(100, ((r - 800) / (3500 - 800)) * 100))
+    }));
+
+    setDrawdownData({
+      ratingVol,
+      recoverySpeed,
+      fatigueOnset: ratingCurve.length,
+      peakMinute: maxRating,
+      maxDrawdown,
+      worstLoss,
+      staminaCurve
+    });
+  };
+
+  const renderDrawdown = () => (
+    <div>
+      <div className="page-header">
+        <div>
+          <div className="page-header-title"><TrendingUp size={20} className="page-header-title-accent" /> Performance Drawdown Profiler</div>
+          <div className="page-header-subtitle">Tracks rating volatility, cognitive stamina, and recovery speed. Know exactly when your logic starts breaking down.</div>
+        </div>
+      </div>
+      <div className="cf-card" style={{ padding: '20px', marginBottom: '16px' }}>
+        <button className="btn btn-primary" onClick={generateDrawdown}><TrendingUp size={14} /> Analyze Performance Drawdown</button>
+        <span style={{ marginLeft: '12px', fontSize: '12px', color: 'var(--text-muted)' }}>Based on your last 30 contests</span>
+      </div>
+      {drawdownData && (
+        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr 1fr', gap: '16px' }}>
+          <div className="stat-card border-blue-top">
+            <div className="stat-card-label">Rating Volatility (σ)</div>
+            <div className="stat-card-value" style={{ color: drawdownData.ratingVol > 120 ? 'var(--icpc-red)' : 'var(--icpc-blue)' }}>±{drawdownData.ratingVol}</div>
+            <div className="stat-card-sub">Rolling 10-contest std deviation</div>
+          </div>
+          <div className="stat-card border-green-top">
+            <div className="stat-card-label">Avg Recovery</div>
+            <div className="stat-card-value">+{drawdownData.recoverySpeed}</div>
+            <div className="stat-card-sub">Avg rating gain per winning contest</div>
+          </div>
+          <div className="stat-card border-gold-top">
+            <div className="stat-card-label">Peak Rating</div>
+            <div className="stat-card-value" style={{ color: 'var(--icpc-gold)' }}>{drawdownData.peakMinute}</div>
+            <div className="stat-card-sub">All-time highest Codeforces rating</div>
+          </div>
+          <div className="stat-card border-red-top">
+            <div className="stat-card-label">Max Drawdown</div>
+            <div className="stat-card-value" style={{ color: drawdownData.maxDrawdown > 100 ? 'var(--icpc-red)' : 'var(--icpc-gold)' }}>
+              -{drawdownData.maxDrawdown}
+            </div>
+            <div className="stat-card-sub">Peak-to-trough rating drop</div>
+          </div>
+          <div className="cf-card" style={{ gridColumn: 'span 4', padding: '20px' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px' }}>
+              <div className="cf-card-title">Rating Arc ({drawdownData.staminaCurve.length} contests shown)</div>
+              <div className="text-mono text-micro" style={{ color: 'var(--text-muted)' }}>Worst single drop: <span style={{ color: 'var(--icpc-red)' }}>{drawdownData.worstLoss}</span></div>
+            </div>
+            <div style={{ display: 'flex', alignItems: 'flex-end', gap: '4px', height: '160px', padding: '0 8px' }}>
+              {drawdownData.staminaCurve.map((pt, i) => (
+                <div key={i} style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', height: '100%', justifyContent: 'flex-end' }}>
+                  <div style={{ width: '100%', height: `${pt.perf}%`, background: pt.perf > 70 ? 'var(--icpc-green)' : pt.perf > 40 ? 'var(--icpc-gold)' : 'var(--icpc-red)', borderRadius: '2px 2px 0 0', transition: 'height 0.3s' }}></div>
+                  <div style={{ fontSize: '9px', color: 'var(--text-muted)', marginTop: '4px' }}>#{i + 1}</div>
+                </div>
+              ))}
+            </div>
+            <div className="alert alert-info" style={{ marginTop: '16px' }}>
+              <strong>Coaching Insight:</strong>{' '}
+              {drawdownData.maxDrawdown > 150
+                ? `Your max drawdown of ${drawdownData.maxDrawdown} points is significant. Focus on consistent performance rather than high-risk strategies in contests.`
+                : drawdownData.maxDrawdown > 50
+                ? `You recovered from a ${drawdownData.maxDrawdown}-point drop — that shows resilience. Keep compounding gains.`
+                : `Low drawdown profile. You play consistently and don't take rating hits easily. Consider pushing into harder problems.`
+              }
+            </div>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+
   const renderSkillTree = () => (
     <div style={{ height: '100%', width: '100%', display: 'flex', flexDirection: 'column' }}>
-      <div style={{ padding: '0 0 16px 0', borderBottom: '1px solid var(--border-quant-harsh)', marginBottom: '16px', flexShrink: 0 }}>
+      <div style={{ padding: '0 0 16px 0', borderBottom: '1px solid var(--border)', marginBottom: '16px', flexShrink: 0 }}>
         <h2 className="text-xl text-primary" style={{ letterSpacing: '-0.02em', marginBottom: '4px' }}>Neural Skill Tree</h2>
         <p className="text-base text-muted">A dynamic 3D mapping of your competitive programming topic proficiency. Hover for insights, click to queue drills.</p>
       </div>
@@ -2471,34 +3211,34 @@ h1{color:#00d4aa;border-bottom:1px solid #333;padding-bottom:16px}h2{color:#888;
 
   const renderSettings = () => (
     <div style={{ padding: '20px', maxWidth: '800px', margin: '0 auto', display: 'flex', flexDirection: 'column', gap: '24px', height: '100%', overflowY: 'auto' }}>
-      <div style={{ padding: '0 0 16px 0', borderBottom: '1px solid var(--border-quant-harsh)' }}>
+      <div style={{ padding: '0 0 16px 0', borderBottom: '1px solid var(--border)' }}>
         <h2 className="text-xl text-primary" style={{ letterSpacing: '-0.02em', marginBottom: '4px' }}>Profile & Global Settings</h2>
         <p className="text-base text-muted">Configure your handles, API keys, and training goals. These settings apply globally across all modules.</p>
       </div>
       
-      <div className="glass-panel-outer" style={{ padding: '24px', display: 'flex', flexDirection: 'column', gap: '16px' }}>
+      <div className="cf-card" style={{ padding: '24px', display: 'flex', flexDirection: 'column', gap: '16px' }}>
         <h3 className="text-lg text-primary" style={{ marginBottom: '8px' }}>Identity Synchronization</h3>
         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
           <div>
             <label className="text-micro text-muted" style={{ display: 'block', marginBottom: '8px' }}>CODEFORCES HANDLE</label>
-            <input value={cfHandle} onChange={e => setCfHandle(e.target.value)} className="text-mono text-base" style={{ background: 'var(--bg-glass-inner)', border: '1px solid var(--border-quant-harsh)', borderRadius: '8px', padding: '12px', color: 'var(--text-primary)', width: '100%', boxSizing: 'border-box', outline: 'none' }} />
+            <input value={cfHandle} onChange={e => setCfHandle(e.target.value)} className="text-mono text-base" style={{ background: 'var(--bg-code)', border: '1px solid var(--border)', borderRadius: '8px', padding: '12px', color: 'var(--text-dark)', width: '100%', boxSizing: 'border-box', outline: 'none' }} />
           </div>
           <div>
             <label className="text-micro text-muted" style={{ display: 'block', marginBottom: '8px' }}>LEETCODE HANDLE</label>
-            <input value={lcHandle} onChange={e => setLcHandle(e.target.value)} className="text-mono text-base" style={{ background: 'var(--bg-glass-inner)', border: '1px solid var(--border-quant-harsh)', borderRadius: '8px', padding: '12px', color: 'var(--text-primary)', width: '100%', boxSizing: 'border-box', outline: 'none' }} />
+            <input value={lcHandle} onChange={e => setLcHandle(e.target.value)} className="text-mono text-base" style={{ background: 'var(--bg-code)', border: '1px solid var(--border)', borderRadius: '8px', padding: '12px', color: 'var(--text-dark)', width: '100%', boxSizing: 'border-box', outline: 'none' }} />
           </div>
         </div>
-        <button onClick={fetchUserProfile} style={{ background: 'var(--accent-cyan)', color: '#000', border: 'none', borderRadius: '8px', padding: '12px', cursor: 'pointer', fontWeight: 'bold', width: '100%', transition: 'opacity 0.2s', marginTop: '8px' }}>
+        <button onClick={fetchUserProfile} style={{ background: 'var(--icpc-blue)', color: '#000', border: 'none', borderRadius: '8px', padding: '12px', cursor: 'pointer', fontWeight: 'bold', width: '100%', transition: 'opacity 0.2s', marginTop: '8px' }}>
           {profile.loading ? 'SYNCING FROM CODEFORCES...' : 'TEST CODEFORCES SYNC'}
         </button>
       </div>
 
-      <div className="glass-panel-outer" style={{ padding: '24px', display: 'flex', flexDirection: 'column', gap: '16px' }}>
+      <div className="cf-card" style={{ padding: '24px', display: 'flex', flexDirection: 'column', gap: '16px' }}>
         <h3 className="text-lg text-primary" style={{ marginBottom: '8px' }}>Training Directives (Goals)</h3>
         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '16px' }}>
           <div>
             <label className="text-micro text-muted" style={{ display: 'block', marginBottom: '8px' }}>TARGET RANK</label>
-            <select value={thSetupGoalRank} onChange={e => setThSetupGoalRank(e.target.value)} className="text-mono text-base" style={{ background: 'var(--bg-glass-inner)', border: '1px solid var(--border-quant-harsh)', borderRadius: '8px', padding: '12px', color: 'var(--text-primary)', width: '100%', boxSizing: 'border-box', outline: 'none' }}>
+            <select value={thSetupGoalRank} onChange={e => setThSetupGoalRank(e.target.value)} className="text-mono text-base" style={{ background: 'var(--bg-code)', border: '1px solid var(--border)', borderRadius: '8px', padding: '12px', color: 'var(--text-dark)', width: '100%', boxSizing: 'border-box', outline: 'none' }}>
               <option value="expert">Expert (1600+)</option>
               <option value="candidate master">Candidate Master (1900+)</option>
               <option value="master">Master (2100+)</option>
@@ -2507,20 +3247,20 @@ h1{color:#00d4aa;border-bottom:1px solid #333;padding-bottom:16px}h2{color:#888;
           </div>
           <div>
             <label className="text-micro text-muted" style={{ display: 'block', marginBottom: '8px' }}>SPRINT DURATION (DAYS)</label>
-            <input type="number" value={thSetupDays} onChange={e => setThSetupDays(Number(e.target.value))} className="text-mono text-base" style={{ background: 'var(--bg-glass-inner)', border: '1px solid var(--border-quant-harsh)', borderRadius: '8px', padding: '12px', color: 'var(--text-primary)', width: '100%', boxSizing: 'border-box', outline: 'none' }} />
+            <input type="number" value={thSetupDays} onChange={e => setThSetupDays(Number(e.target.value))} className="text-mono text-base" style={{ background: 'var(--bg-code)', border: '1px solid var(--border)', borderRadius: '8px', padding: '12px', color: 'var(--text-dark)', width: '100%', boxSizing: 'border-box', outline: 'none' }} />
           </div>
           <div>
             <label className="text-micro text-muted" style={{ display: 'block', marginBottom: '8px' }}>DAILY DRILL QUOTA</label>
-            <input type="number" value={thSetupDailyQ} onChange={e => setThSetupDailyQ(Number(e.target.value))} className="text-mono text-base" style={{ background: 'var(--bg-glass-inner)', border: '1px solid var(--border-quant-harsh)', borderRadius: '8px', padding: '12px', color: 'var(--text-primary)', width: '100%', boxSizing: 'border-box', outline: 'none' }} />
+            <input type="number" value={thSetupDailyQ} onChange={e => setThSetupDailyQ(Number(e.target.value))} className="text-mono text-base" style={{ background: 'var(--bg-code)', border: '1px solid var(--border)', borderRadius: '8px', padding: '12px', color: 'var(--text-dark)', width: '100%', boxSizing: 'border-box', outline: 'none' }} />
           </div>
         </div>
       </div>
 
-      <div className="glass-panel-outer" style={{ padding: '24px', display: 'flex', flexDirection: 'column', gap: '16px' }}>
+      <div className="cf-card" style={{ padding: '24px', display: 'flex', flexDirection: 'column', gap: '16px' }}>
         <h3 className="text-lg text-primary" style={{ marginBottom: '8px' }}>API Configurations</h3>
         <div>
           <label className="text-micro text-muted" style={{ display: 'block', marginBottom: '8px' }}>NVIDIA NIM API KEY (SOCRATIC COACH)</label>
-          <input type="password" value={coachNvidiaKey} onChange={e => { setCoachNvidiaKey(e.target.value); localStorage.setItem('ag_nvidia_key', e.target.value); }} placeholder="nvapi-..." className="text-mono text-base" style={{ background: 'var(--bg-glass-inner)', border: '1px solid var(--border-quant-harsh)', borderRadius: '8px', padding: '12px', color: 'var(--text-primary)', width: '100%', boxSizing: 'border-box', outline: 'none' }} />
+          <input type="password" value={coachNvidiaKey} onChange={e => { setCoachNvidiaKey(e.target.value); localStorage.setItem('ag_nvidia_key', e.target.value); }} placeholder="nvapi-..." className="text-mono text-base" style={{ background: 'var(--bg-code)', border: '1px solid var(--border)', borderRadius: '8px', padding: '12px', color: 'var(--text-dark)', width: '100%', boxSizing: 'border-box', outline: 'none' }} />
         </div>
       </div>
 
@@ -2536,57 +3276,618 @@ h1{color:#00d4aa;border-bottom:1px solid #333;padding-bottom:16px}h2{color:#888;
           saveGoals({ targetRank: thSetupGoalRank, days: thSetupDays, dailyQuota: thSetupDailyQ, sprintStart: Math.floor(Date.now() / 1000) });
           setThSetupMode(false);
           await fetchUserProfile();
-          alert('✅ Profile synced! CF data refreshed.');
+          alert('Profile synced successfully.');
         } catch(e) { alert('Failed to sync — check backend connection.'); }
-      }} className="text-base" style={{ background: 'linear-gradient(135deg,rgba(94,207,255,0.85),rgba(200,110,255,0.80))', color: '#05050f', border: 'none', borderRadius: '14px', padding: '16px', cursor: 'pointer', fontWeight: 800, width: '100%', transition: 'transform 0.2s, opacity 0.2s, box-shadow 0.2s', marginTop: '8px', letterSpacing: '0.04em', boxShadow: '0 8px 24px rgba(94,207,255,0.22)' }}>
-        ⚡ SAVE & SYNC GLOBAL PROFILE
+      }} className="btn btn-primary btn-lg" style={{ width: '100%', marginTop: '8px' }}>
+        Save & Sync Profile
       </button>
+    </div>
+  );
+
+  // ── Loading Screen ───────────────────────────────────────────────────
+  if (appLoading) return (
+    <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', height: '100vh', background: 'linear-gradient(160deg, #0D2D5E 0%, #1A3A6B 100%)', gap: '24px' }}>
+      <MyCPCLogo size="xl" showText={true} style={{ filter: 'drop-shadow(0 4px 12px rgba(0,0,0,0.3))' }} />
+      <div style={{ width: '200px', height: '3px', background: 'rgba(255,255,255,0.1)', borderRadius: '2px', overflow: 'hidden' }}>
+        <div style={{ height: '100%', background: 'var(--icpc-gold)', borderRadius: '2px', animation: 'loadBar 2s ease-in-out infinite', width: '40%' }}></div>
+      </div>
+      <div style={{ color: 'rgba(255,255,255,0.5)', fontSize: '12px', fontFamily: 'var(--font-mono)', letterSpacing: '0.05em' }}>{loadingMsg}</div>
     </div>
   );
 
   if (!user) return renderAuth();
   if (isSpatialHome) return renderSpatialHome();
 
-  return (
-    <div className="dashboard-layout">
-      {renderSidebar()}
-      <main className="main-content" data-view={activeView}>
-        {activeView === 'command_center' && renderCommandCenter()}
-        {activeView === 'crucible' && renderCrucible()}
-        {activeView === 'golden_path' && renderGoldenPath()}
-        {activeView === 'graveyard' && renderGraveyard()}
-        {activeView === 'code_explorer' && renderCodeExplorer()}
-        {activeView === 'palantir_hub' && renderPalantirHub()}
-        {activeView === 'topic_explorer' && renderTopicExplorer()}
-        {activeView === 'training_hub' && renderTrainingHub()}
-        {activeView === 'skill_tree' && renderSkillTree()}
-        {activeView === 'settings' && renderSettings()}
-      </main>
+  const viewNames = {
+    command_center: 'Command Center',
+    crucible: 'Socratic Coach',
+    golden_path: 'Golden Path',
+    graveyard: 'Spaced Repetition',
+    code_explorer: 'GM Code Explorer',
+    palantir_hub: 'Palantir Intelligence',
+    topic_explorer: 'Topic Explorer',
+    training_hub: 'Training Hub',
+    skill_tree: 'Neural Skill Tree',
+    settings: 'Profile & Settings',
+    complexity_analyzer: 'DACE Complexity Analyzer',
+    memory_profiler: 'Cache & Memory Profiler',
+    contest_simulator: 'Submission EV Engine',
+    telemetry: 'Micro-Decision Telemetry',
+    drawdown: 'Drawdown Profiler',
+    ai_coach_chat: 'AI Coach Chat',
+    peer_compare: 'Peer DNA Comparison',
+    contest_postmortem: 'Contest Post-Mortem',
+    achievements: 'Achievements',
+    performance_arc: 'Performance Arc',
+    mentor_view: 'Mentor View',
+  };
 
-      {/* Code Modal Overlay */}
+  // ── Data Fetchers for new sections ────────────────────────────────────────
+  const loadArc = async () => {
+    if (arcLoading || !cfHandle) return;
+    setArcLoading(true);
+    try {
+      const r = await fetch(`${BACKEND}/api/dna/performance-arc/${cfHandle}`);
+      const d = await r.json();
+      if (d.success) setArcData(d.arc);
+    } catch { }
+    setArcLoading(false);
+  };
+
+  const loadAchievements = async () => {
+    if (achievementsLoading || !cfHandle) return;
+    setAchievementsLoading(true);
+    try {
+      await fetch(`${BACKEND}/api/achievements/check/${cfHandle}`, { method: 'POST' });
+      const r = await fetch(`${BACKEND}/api/achievements/${cfHandle}`);
+      const d = await r.json();
+      if (d.success) setAchievements(d);
+    } catch { }
+    setAchievementsLoading(false);
+  };
+
+  const loadMentorStudents = async () => {
+    if (!cfHandle) return;
+    try {
+      const r = await fetch(`${BACKEND}/api/mentor/students/${cfHandle}`);
+      const d = await r.json();
+      if (d.success) setMentorStudents(d.students);
+    } catch { }
+  };
+
+  const sendChat = async () => {
+    if (!chatInput.trim() || chatLoading) return;
+    const userMsg = chatInput.trim();
+    setChatMessages(m => [...m, { role: 'user', text: userMsg }]);
+    setChatInput('');
+    setChatLoading(true);
+    try {
+      const r = await fetch(`${BACKEND}/api/coach/chat`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ cfHandle, message: userMsg })
+      });
+      const d = await r.json();
+      setChatMessages(m => [...m, { role: 'assistant', text: d.response || d.error || 'No response.' }]);
+    } catch {
+      setChatMessages(m => [...m, { role: 'assistant', text: 'Backend offline. Start the server to use AI coach.' }]);
+    }
+    setChatLoading(false);
+  };
+
+  const comparePeer = async () => {
+    if (!peerHandle.trim() || peerLoading) return;
+    setPeerLoading(true);
+    try {
+      const r = await fetch(`${BACKEND}/api/dna/compare/${cfHandle}/${peerHandle}`);
+      const d = await r.json();
+      if (d.success) setPeerData(d);
+    } catch { }
+    setPeerLoading(false);
+  };
+
+  const loadPostmortem = async () => {
+    if (!pmContestId.trim() || pmLoading) return;
+    setPmLoading(true);
+    try {
+      const r = await fetch(`${BACKEND}/api/contest/postmortem/${cfHandle}/${pmContestId}`);
+      const d = await r.json();
+      if (d.success) setPmData(d);
+    } catch { }
+    setPmLoading(false);
+  };
+
+  const submitMentorAnnotation = async () => {
+    if (!mentorAnnotation.trim() || !mentorSelectedSession) return;
+    try {
+      await fetch(`${BACKEND}/api/mentor/annotate`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          sessionId: mentorSelectedSession,
+          mentorHandle: cfHandle,
+          studentHandle: mentorStudentHandle,
+          annotation: mentorAnnotation,
+          annotationType: mentorAnnotationType
+        })
+      });
+      setMentorAnnotation('');
+      const r = await fetch(`${BACKEND}/api/mentor/annotations/${mentorSelectedSession}`);
+      const d = await r.json();
+      if (d.success) setMentorAnnotations(d.annotations);
+    } catch { }
+  };
+
+  // ── New View Render Functions ─────────────────────────────────────────────
+
+  const renderAICoachChat = () => (
+    <div style={{ maxWidth: 700, margin: '0 auto', display: 'flex', flexDirection: 'column', height: 'calc(100vh - 180px)' }}>
+      <div className="cf-card" style={{ padding: '20px', marginBottom: 16 }}>
+        <h2 style={{ fontSize: 16, fontWeight: 700, color: 'var(--icpc-blue)', marginBottom: 4 }}>🤖 AI Coach Chat</h2>
+        <p style={{ fontSize: 12, color: 'var(--text-muted)' }}>Powered by Gemini Flash with RAG over your session history. The coach knows your DNA, weak areas, and recent sessions.</p>
+      </div>
+
+      <div className="cf-card" style={{ flex: 1, overflowY: 'auto', padding: '16px', display: 'flex', flexDirection: 'column', gap: 12, marginBottom: 12 }}>
+        {chatMessages.map((msg, i) => (
+          <div key={i} style={{ display: 'flex', justifyContent: msg.role === 'user' ? 'flex-end' : 'flex-start' }}>
+            <div style={{
+              maxWidth: '80%', padding: '10px 14px', borderRadius: msg.role === 'user' ? '14px 14px 4px 14px' : '14px 14px 14px 4px',
+              background: msg.role === 'user' ? 'var(--icpc-blue)' : 'var(--bg-card)',
+              border: msg.role === 'user' ? 'none' : '1px solid var(--border)',
+              color: msg.role === 'user' ? '#fff' : 'var(--text-body)',
+              fontSize: 13, lineHeight: 1.6, whiteSpace: 'pre-wrap'
+            }}>
+              {msg.role === 'assistant' && <span style={{ fontWeight: 700, color: 'var(--icpc-gold)', display: 'block', marginBottom: 4, fontSize: 10 }}>🧬 AI COACH</span>}
+              {msg.text}
+            </div>
+          </div>
+        ))}
+        {chatLoading && (
+          <div style={{ display: 'flex', justifyContent: 'flex-start' }}>
+            <div style={{ padding: '10px 14px', background: 'var(--bg-card)', border: '1px solid var(--border)', borderRadius: '14px 14px 14px 4px', color: 'var(--icpc-blue)', fontSize: 12 }}>
+              Analyzing your sessions... ✨
+            </div>
+          </div>
+        )}
+      </div>
+
+      <div className="cf-card" style={{ padding: 12 }}>
+        <div style={{ display: 'flex', gap: 8 }}>
+          <input
+            type="text" value={chatInput} onChange={e => setChatInput(e.target.value)}
+            onKeyDown={e => e.key === 'Enter' && sendChat()}
+            placeholder="Ask: Why am I struggling with DP? What should I learn next? How close am I to Specialist?"
+            style={{ flex: 1, padding: '8px 12px', borderRadius: 6, border: '1px solid var(--border)', background: 'var(--bg-page)', color: 'var(--text-body)', fontSize: 12 }}
+          />
+          <button onClick={sendChat} disabled={chatLoading} className="btn btn-primary" style={{ padding: '8px 20px' }}>Send</button>
+        </div>
+        <p style={{ fontSize: 10, color: 'var(--text-muted)', marginTop: 6 }}>Add your Gemini key in Settings → BYOK Gemini Key for personalized RAG responses.</p>
+      </div>
+    </div>
+  );
+
+  const renderPeerCompare = () => {
+    const radarSize = 200;
+    const radarCenter = radarSize / 2;
+    const radarR = 80;
+    const axes = ['Speed', 'Accuracy', 'Resilience', 'Cleanliness'];
+    const angles = axes.map((_, i) => (i / axes.length) * 2 * Math.PI - Math.PI / 2);
+
+    const makePoints = (profile) => axes.map((k, i) => {
+      const val = (profile?.[k.toLowerCase()] || 50) / 100;
+      const angle = angles[i];
+      return `${radarCenter + radarR * val * Math.cos(angle)},${radarCenter + radarR * val * Math.sin(angle)}`;
+    }).join(' ');
+
+    return (
+      <div style={{ maxWidth: 700, margin: '0 auto' }}>
+        <div className="cf-card" style={{ padding: 20, marginBottom: 16 }}>
+          <h2 style={{ fontSize: 16, fontWeight: 700, color: 'var(--icpc-blue)', marginBottom: 4 }}>🔭 Peer DNA Comparison</h2>
+          <p style={{ fontSize: 12, color: 'var(--text-muted)', marginBottom: 16 }}>Compare your coding DNA with any CF user who uses myCPC.</p>
+          <div style={{ display: 'flex', gap: 8 }}>
+            <input type="text" value={peerHandle} onChange={e => setPeerHandle(e.target.value)} placeholder="Enter competitor's CF handle" onKeyDown={e => e.key === 'Enter' && comparePeer()}
+              style={{ flex: 1, padding: '8px 12px', borderRadius: 6, border: '1px solid var(--border)', background: 'var(--bg-page)', color: 'var(--text-body)', fontSize: 12 }} />
+            <button onClick={comparePeer} disabled={peerLoading} className="btn btn-primary">Compare</button>
+          </div>
+        </div>
+
+        {peerData && (
+          <div className="cf-card" style={{ padding: 24 }}>
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 24, alignItems: 'center' }}>
+              <div style={{ textAlign: 'center' }}>
+                <div style={{ fontSize: 13, fontWeight: 700, color: 'var(--icpc-blue)', marginBottom: 8 }}>You: {cfHandle}</div>
+                <svg width={radarSize} height={radarSize} style={{ overflow: 'visible' }}>
+                  {[0.25, 0.5, 0.75, 1].map(r => (
+                    <polygon key={r} points={angles.map(a => `${radarCenter + radarR * r * Math.cos(a)},${radarCenter + radarR * r * Math.sin(a)}`).join(' ')} fill="none" stroke="rgba(255,255,255,0.08)" strokeWidth="1" />
+                  ))}
+                  {axes.map((label, i) => {
+                    const angle = angles[i];
+                    return <g key={i}>
+                      <line x1={radarCenter} y1={radarCenter} x2={radarCenter + radarR * Math.cos(angle)} y2={radarCenter + radarR * Math.sin(angle)} stroke="rgba(255,255,255,0.1)" strokeWidth="1" />
+                      <text x={radarCenter + (radarR + 15) * Math.cos(angle)} y={radarCenter + (radarR + 15) * Math.sin(angle)} textAnchor="middle" fill="rgba(255,255,255,0.5)" fontSize="10">{label}</text>
+                    </g>;
+                  })}
+                  <polygon points={makePoints(peerData.profile1)} fill="rgba(94,207,255,0.15)" stroke="#5ecfff" strokeWidth="2" />
+                </svg>
+              </div>
+              <div style={{ textAlign: 'center' }}>
+                <div style={{ fontSize: 13, fontWeight: 700, color: 'var(--icpc-gold)', marginBottom: 8 }}>{peerData.handle2} {peerData.cf2Rank ? `(${peerData.cf2Rank})` : ''}</div>
+                <svg width={radarSize} height={radarSize} style={{ overflow: 'visible' }}>
+                  {[0.25, 0.5, 0.75, 1].map(r => (
+                    <polygon key={r} points={angles.map(a => `${radarCenter + radarR * r * Math.cos(a)},${radarCenter + radarR * r * Math.sin(a)}`).join(' ')} fill="none" stroke="rgba(255,255,255,0.08)" strokeWidth="1" />
+                  ))}
+                  {axes.map((label, i) => {
+                    const angle = angles[i];
+                    return <g key={i}>
+                      <line x1={radarCenter} y1={radarCenter} x2={radarCenter + radarR * Math.cos(angle)} y2={radarCenter + radarR * Math.sin(angle)} stroke="rgba(255,255,255,0.1)" strokeWidth="1" />
+                      <text x={radarCenter + (radarR + 15) * Math.cos(angle)} y={radarCenter + (radarR + 15) * Math.sin(angle)} textAnchor="middle" fill="rgba(255,255,255,0.5)" fontSize="10">{label}</text>
+                    </g>;
+                  })}
+                  <polygon points={makePoints(peerData.profile2)} fill="rgba(251,191,36,0.15)" stroke="#fbbf24" strokeWidth="2" />
+                </svg>
+              </div>
+            </div>
+            {peerData.gaps?.length > 0 && (
+              <div style={{ marginTop: 20, borderTop: '1px solid var(--border)', paddingTop: 16 }}>
+                <div style={{ fontSize: 11, color: 'var(--text-muted)', marginBottom: 8, textTransform: 'uppercase', letterSpacing: '0.05em' }}>Closing The Gap</div>
+                {peerData.gaps.map((g, i) => (
+                  <div key={i} style={{ display: 'flex', gap: 10, padding: '8px 0', borderBottom: '1px solid rgba(255,255,255,0.04)' }}>
+                    <div style={{ color: '#f87171', fontWeight: 700, fontSize: 11, width: 80 }}>{g.area} -{g.gap}pts</div>
+                    <div style={{ fontSize: 11, color: 'var(--text-body)' }}>{g.advice}</div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        )}
+      </div>
+    );
+  };
+
+  const renderContestPostmortem = () => (
+    <div style={{ maxWidth: 800, margin: '0 auto' }}>
+      <div className="cf-card" style={{ padding: 20, marginBottom: 16 }}>
+        <h2 style={{ fontSize: 16, fontWeight: 700, color: 'var(--icpc-blue)', marginBottom: 4 }}>📊 Contest Post-Mortem</h2>
+        <p style={{ fontSize: 12, color: 'var(--text-muted)', marginBottom: 16 }}>Analyze any Codeforces contest you participated in. See your problem-by-problem timeline and optimal ordering.</p>
+        <div style={{ display: 'flex', gap: 8 }}>
+          <input type="number" value={pmContestId} onChange={e => setPmContestId(e.target.value)} placeholder="CF Contest ID (e.g. 1900)"
+            style={{ flex: 1, padding: '8px 12px', borderRadius: 6, border: '1px solid var(--border)', background: 'var(--bg-page)', color: 'var(--text-body)', fontSize: 12 }} />
+          <button onClick={loadPostmortem} disabled={pmLoading} className="btn btn-primary">Analyze</button>
+        </div>
+      </div>
+
+      {pmData && (
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 12 }}>
+            {[
+              { label: 'Problems Solved', val: pmData.problemsSolved, color: '#4ade80' },
+              { label: 'Total Penalty', val: `${pmData.totalPenalty}m`, color: '#f87171' },
+              { label: 'Optimal Order', val: pmData.optimalOrder?.join(' → ') || '—', color: '#fbbf24' }
+            ].map((s, i) => (
+              <div key={i} className="cf-card" style={{ padding: 16, textAlign: 'center' }}>
+                <div style={{ fontSize: 20, fontWeight: 700, color: s.color, fontFamily: 'var(--font-mono)' }}>{s.val}</div>
+                <div style={{ fontSize: 10, color: 'var(--text-muted)', marginTop: 4, textTransform: 'uppercase' }}>{s.label}</div>
+              </div>
+            ))}
+          </div>
+
+          <div className="cf-card" style={{ padding: 20 }}>
+            <div className="text-micro text-muted" style={{ marginBottom: 12 }}>PROBLEM TIMELINE</div>
+            {pmData.timeline?.map((p, i) => (
+              <div key={i} style={{ display: 'flex', gap: 12, padding: '8px 0', borderBottom: '1px solid rgba(255,255,255,0.04)', alignItems: 'center' }}>
+                <div style={{ width: 32, height: 32, borderRadius: '50%', background: p.firstAC ? 'rgba(74,222,128,0.15)' : 'rgba(248,113,113,0.15)', border: `1px solid ${p.firstAC ? '#4ade80' : '#f87171'}`, display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 700, fontSize: 12, color: p.firstAC ? '#4ade80' : '#f87171', flexShrink: 0 }}>{p.index}</div>
+                <div style={{ flex: 1 }}>
+                  <div style={{ fontSize: 12, fontWeight: 600 }}>{p.name} {p.rating ? <span style={{ fontSize: 10, color: '#fbbf24' }}>({p.rating})</span> : ''}</div>
+                  <div style={{ fontSize: 10, color: 'var(--text-muted)' }}>
+                    {p.firstAC ? `✅ AC at ${Math.floor(p.firstAC / 60)}m${p.firstAC % 60}s` : '❌ Not solved'}{p.waCount > 0 ? ` • ${p.waCount} WA (+${p.penalty}m penalty)` : ''}
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+
+          {pmData.insights?.length > 0 && (
+            <div className="cf-card" style={{ padding: 20, borderLeft: '3px solid #fbbf24' }}>
+              <div className="text-micro text-muted" style={{ marginBottom: 10 }}>💡 INSIGHTS</div>
+              {pmData.insights.map((ins, i) => (
+                <div key={i} style={{ fontSize: 12, color: 'var(--text-body)', padding: '4px 0', lineHeight: 1.6 }}>• {ins}</div>
+              ))}
+            </div>
+          )}
+        </div>
+      )}
+    </div>
+  );
+
+  const renderAchievements = () => (
+    <div style={{ maxWidth: 900, margin: '0 auto' }}>
+      <div className="cf-card" style={{ padding: 20, marginBottom: 16, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+        <div>
+          <h2 style={{ fontSize: 16, fontWeight: 700, color: 'var(--icpc-blue)', marginBottom: 4 }}>🏅 Achievements</h2>
+          <p style={{ fontSize: 12, color: 'var(--text-muted)' }}>Earned through exceptional performances detected in your DNA sessions.</p>
+        </div>
+        {achievements && <div style={{ fontSize: 24, fontWeight: 700, color: '#fbbf24' }}>{achievements.totalEarned}<span style={{ fontSize: 12, color: 'var(--text-muted)', fontWeight: 400 }}>/{achievements.total}</span></div>}
+      </div>
+
+      {achievementsLoading ? (
+        <div style={{ textAlign: 'center', color: 'var(--text-muted)', padding: 40 }}>Loading achievements...</div>
+      ) : achievements ? (
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(260px, 1fr))', gap: 12 }}>
+          {achievements.achievements?.map((a, i) => (
+            <div key={i} className="cf-card" style={{
+              padding: 16,
+              opacity: a.earned ? 1 : 0.4,
+              borderLeft: `3px solid ${a.earned ? '#fbbf24' : 'var(--border)'}`,
+              background: a.earned ? 'rgba(251,191,36,0.05)' : 'var(--bg-card)',
+              transition: 'all 0.2s'
+            }}>
+              <div style={{ fontSize: 22, marginBottom: 6 }}>{a.name.split(' ')[0]}</div>
+              <div style={{ fontSize: 12, fontWeight: 700, color: a.earned ? 'var(--text-dark)' : 'var(--text-muted)', marginBottom: 4 }}>{a.name.slice(a.name.indexOf(' ') + 1)}</div>
+              <div style={{ fontSize: 11, color: 'var(--text-muted)', lineHeight: 1.5 }}>{a.desc}</div>
+              {a.earned && a.earnedAt && (
+                <div style={{ marginTop: 8, fontSize: 10, color: '#4ade80' }}>✅ Earned {new Date(a.earnedAt).toLocaleDateString()}</div>
+              )}
+            </div>
+          ))}
+        </div>
+      ) : (
+        <div className="cf-card" style={{ padding: 40, textAlign: 'center', color: 'var(--text-muted)' }}>
+          <div style={{ fontSize: 36, marginBottom: 12 }}>🏅</div>
+          <div>Complete problems with myCPC DNA tracking to unlock achievements.</div>
+          <button onClick={loadAchievements} className="btn btn-primary" style={{ marginTop: 16 }}>Check Achievements</button>
+        </div>
+      )}
+    </div>
+  );
+
+  const renderPerformanceArc = () => {
+    const chartW = 680, chartH = 160;
+    const points = (data, key) => data?.map((d, i) => `${(i / Math.max(data.length - 1, 1)) * chartW},${chartH - (d[key] / 100) * chartH}`).join(' ');
+
+    return (
+      <div style={{ maxWidth: 800, margin: '0 auto' }}>
+        <div className="cf-card" style={{ padding: 20, marginBottom: 16 }}>
+          <h2 style={{ fontSize: 16, fontWeight: 700, color: 'var(--icpc-blue)', marginBottom: 4 }}>📈 Performance Arc</h2>
+          <p style={{ fontSize: 12, color: 'var(--text-muted)' }}>Your DNA scores over time — see how Speed, Accuracy, and Resilience evolve across sessions.</p>
+        </div>
+
+        {arcLoading ? (
+          <div style={{ textAlign: 'center', color: 'var(--text-muted)', padding: 40 }}>Loading performance arc...</div>
+        ) : arcData?.length > 0 ? (
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+            {[
+              { key: 'rollingSpeed',     label: 'Speed',      color: '#5ecfff' },
+              { key: 'rollingAccuracy',  label: 'Accuracy',   color: '#4ade80' },
+              { key: 'rollingResilience',label: 'Resilience', color: '#a78bfa' },
+            ].map(({ key, label, color }) => (
+              <div key={key} className="cf-card" style={{ padding: 16 }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 8 }}>
+                  <span style={{ fontSize: 11, color, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.05em' }}>{label}</span>
+                  <span style={{ fontSize: 11, color, fontFamily: 'var(--font-mono)' }}>
+                    {arcData[arcData.length - 1]?.[key]?.toFixed(1) || '—'}
+                  </span>
+                </div>
+                <svg width="100%" height={chartH} viewBox={`0 0 ${chartW} ${chartH}`} preserveAspectRatio="none">
+                  <defs>
+                    <linearGradient id={`grad-${key}`} x1="0" y1="0" x2="0" y2="1">
+                      <stop offset="0%" stopColor={color} stopOpacity="0.2" />
+                      <stop offset="100%" stopColor={color} stopOpacity="0" />
+                    </linearGradient>
+                  </defs>
+                  <polygon points={`0,${chartH} ${points(arcData, key)} ${chartW},${chartH}`} fill={`url(#grad-${key})`} />
+                  {arcData.length > 1 && <polyline points={points(arcData, key)} fill="none" stroke={color} strokeWidth="2" />}
+                </svg>
+              </div>
+            ))}
+
+            <div className="cf-card" style={{ padding: 16 }}>
+              <div className="text-micro text-muted" style={{ marginBottom: 10 }}>SESSION BREAKDOWN</div>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 3, maxHeight: 200, overflowY: 'auto' }}>
+                {arcData.slice().reverse().slice(0, 10).map((d, i) => (
+                  <div key={i} style={{ display: 'flex', gap: 12, padding: '4px 0', borderBottom: '1px solid rgba(255,255,255,0.04)', fontSize: 11 }}>
+                    <span style={{ color: 'var(--text-muted)', width: 80, flexShrink: 0 }}>{new Date(d.date).toLocaleDateString()}</span>
+                    <span style={{ color: 'var(--icpc-blue)', flex: 1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{d.problemName}</span>
+                    <span style={{ color: '#5ecfff', fontFamily: 'var(--font-mono)', width: 32 }}>{d.speed?.toFixed(0)}</span>
+                    <span style={{ color: '#4ade80', fontFamily: 'var(--font-mono)', width: 32 }}>{d.accuracy?.toFixed(0)}</span>
+                    <span style={{ color: '#a78bfa', fontFamily: 'var(--font-mono)', width: 32 }}>{d.resilience?.toFixed(0)}</span>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
+        ) : (
+          <div className="cf-card" style={{ padding: 40, textAlign: 'center', color: 'var(--text-muted)' }}>
+            <div style={{ fontSize: 36, marginBottom: 12 }}>📈</div>
+            <div>Solve at least 3 problems with myCPC to see your performance arc.</div>
+            <button onClick={loadArc} className="btn btn-primary" style={{ marginTop: 16 }}>Load Arc</button>
+          </div>
+        )}
+      </div>
+    );
+  };
+
+  const renderMentorView = () => (
+    <div style={{ maxWidth: 900, margin: '0 auto', display: 'grid', gridTemplateColumns: '280px 1fr', gap: 16 }}>
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+        <div className="cf-card" style={{ padding: 16 }}>
+          <div style={{ fontSize: 13, fontWeight: 700, marginBottom: 12 }}>🧑‍🏫 Mentor Dashboard</div>
+          <p style={{ fontSize: 11, color: 'var(--text-muted)', marginBottom: 12 }}>You are mentoring as: <strong style={{ color: 'var(--icpc-blue)' }}>{cfHandle}</strong></p>
+          <div style={{ fontSize: 11, color: 'var(--text-muted)', marginBottom: 6 }}>Student Handle</div>
+          <input type="text" value={mentorStudentHandle} onChange={e => setMentorStudentHandle(e.target.value)} placeholder="Enter student's CF handle"
+            style={{ width: '100%', padding: '8px 10px', borderRadius: 6, border: '1px solid var(--border)', background: 'var(--bg-page)', color: 'var(--text-body)', fontSize: 11, boxSizing: 'border-box' }} />
+        </div>
+
+        {mentorStudents?.length > 0 && (
+          <div className="cf-card" style={{ padding: 16 }}>
+            <div className="text-micro text-muted" style={{ marginBottom: 8 }}>STUDENTS</div>
+            {mentorStudents.map(s => (
+              <div key={s.handle} onClick={() => setMentorStudentHandle(s.handle)} style={{ padding: '8px 0', borderBottom: '1px solid rgba(255,255,255,0.04)', cursor: 'pointer', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                <span style={{ fontSize: 12, color: 'var(--icpc-blue)' }}>{s.handle}</span>
+                <span style={{ fontSize: 10, color: 'var(--text-muted)' }}>{s.sessionsAnnotated} sessions</span>
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
+
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+        <div className="cf-card" style={{ padding: 20 }}>
+          <div style={{ fontSize: 13, fontWeight: 700, marginBottom: 12 }}>📝 Add Annotation</div>
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8, marginBottom: 8 }}>
+            <div>
+              <div style={{ fontSize: 11, color: 'var(--text-muted)', marginBottom: 4 }}>Session ID</div>
+              <input type="number" value={mentorSelectedSession || ''} onChange={e => setMentorSelectedSession(e.target.value)}
+                placeholder="Session ID from history"
+                style={{ width: '100%', padding: '7px 10px', borderRadius: 6, border: '1px solid var(--border)', background: 'var(--bg-page)', color: 'var(--text-body)', fontSize: 11, boxSizing: 'border-box' }} />
+            </div>
+            <div>
+              <div style={{ fontSize: 11, color: 'var(--text-muted)', marginBottom: 4 }}>Type</div>
+              <select value={mentorAnnotationType} onChange={e => setMentorAnnotationType(e.target.value)}
+                style={{ width: '100%', padding: '7px 10px', borderRadius: 6, border: '1px solid var(--border)', background: 'var(--bg-page)', color: 'var(--text-body)', fontSize: 11, boxSizing: 'border-box' }}>
+                <option value="note">📝 Note</option>
+                <option value="praise">🌟 Praise</option>
+                <option value="warning">⚠️ Warning</option>
+                <option value="challenge">🏆 Challenge</option>
+              </select>
+            </div>
+          </div>
+          <textarea value={mentorAnnotation} onChange={e => setMentorAnnotation(e.target.value)} placeholder="Write your annotation, feedback, or assignment..."
+            style={{ width: '100%', padding: '8px 10px', borderRadius: 6, border: '1px solid var(--border)', background: 'var(--bg-page)', color: 'var(--text-body)', fontSize: 12, minHeight: 80, boxSizing: 'border-box', fontFamily: 'inherit', resize: 'vertical' }} />
+          <button onClick={submitMentorAnnotation} className="btn btn-primary" style={{ marginTop: 8, padding: '8px 20px' }}>Save Annotation</button>
+        </div>
+
+        {mentorAnnotations.length > 0 && (
+          <div className="cf-card" style={{ padding: 20 }}>
+            <div className="text-micro text-muted" style={{ marginBottom: 10 }}>ANNOTATIONS ON SESSION #{mentorSelectedSession}</div>
+            {mentorAnnotations.map((a, i) => (
+              <div key={i} style={{ padding: '10px', background: 'var(--bg-page)', borderRadius: 6, marginBottom: 8, borderLeft: `3px solid ${a.annotation_type === 'praise' ? '#4ade80' : a.annotation_type === 'warning' ? '#f87171' : 'var(--icpc-blue)'}` }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 4 }}>
+                  <span style={{ fontSize: 10, color: 'var(--icpc-gold)', fontWeight: 700 }}>{a.mentor_handle}</span>
+                  <span style={{ fontSize: 10, color: 'var(--text-muted)' }}>{new Date(a.created_at).toLocaleDateString()}</span>
+                </div>
+                <div style={{ fontSize: 12, color: 'var(--text-body)', lineHeight: 1.5 }}>{a.annotation}</div>
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
+    </div>
+  );
+
+  return (
+
+    <div className="app-wrapper">
+      {/* ICPC Site Header */}
+      <header className="site-header">
+        <div className="site-header-logo" onClick={() => setIsSpatialHome(true)} style={{ cursor: 'pointer' }}>
+          <MyCPCLogo size="xs" />
+          <div className="site-header-wordmark">
+            <div className="site-header-title">myCPC</div>
+            <div className="site-header-subtitle">Opportunity · Choice · Growth</div>
+          </div>
+        </div>
+        <div className="site-header-tagline">
+          <span style={{color: 'var(--icpc-blue)'}}>Opportunity</span>
+          <span style={{color: 'rgba(255,255,255,0.3)', margin: '0 6px'}}>·</span>
+          <span style={{color: 'var(--icpc-gold)'}}>Choice</span>
+          <span style={{color: 'rgba(255,255,255,0.3)', margin: '0 6px'}}>·</span>
+          <span style={{color: 'var(--icpc-red)'}}>Growth</span>
+        </div>
+        <div className="site-header-right">
+          <span className="site-header-status" style={{ color: backendHealth ? 'var(--icpc-green)' : 'rgba(255,255,255,0.4)' }}>
+            <span style={{ width: 6, height: 6, background: backendHealth ? 'var(--icpc-green)' : 'rgba(255,255,255,0.25)', borderRadius: '50%', display: 'inline-block' }}></span>
+            {backendHealth ? 'DB Synced' : 'DB Offline'}
+          </span>
+          <div className="site-header-user" onClick={() => setActiveView('settings')}>
+            <div style={{ width: '24px', height: '24px', borderRadius: '50%', background: 'var(--icpc-blue)', overflow: 'hidden', flexShrink: 0 }}>
+              {profile.avatar && <img src={profile.avatar} alt="av" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />}
+            </div>
+            <span className="site-header-user-handle">{cfHandle}</span>
+          </div>
+          <button className="site-header-signout" onClick={() => setUser(null)}>Sign Out</button>
+        </div>
+      </header>
+
+      {/* Sub-nav briefing bar */}
+      <div className="daily-briefing">
+        <div className="briefing-item">
+          <span className="briefing-label">View</span>
+          <span className="briefing-value">{viewNames[activeView] || activeView}</span>
+        </div>
+        <div className="briefing-item">
+          <span className="briefing-label">Rating</span>
+          <span className="briefing-value" style={{ color: getCfColor(profile.rating || 0) || 'rgba(255,255,255,0.9)' }}>{profile.rating || '—'}</span>
+        </div>
+        <div className="briefing-item">
+          <span className="briefing-label">SR Queue</span>
+          <span className={`briefing-value ${srQueue.length > 0 ? 'warn' : ''}`}>{srQueue.length}</span>
+        </div>
+        <div className="briefing-item">
+          <span className="briefing-label">Rank</span>
+          <span className="briefing-value" style={{ textTransform: 'capitalize' }}>{profile.rank || '—'}</span>
+        </div>
+        {isTiltActive() && (
+          <div className="briefing-item">
+            <span className="briefing-label" style={{ color: 'var(--icpc-red)' }}>TILT</span>
+            <span className="briefing-value err timer-danger">{Math.floor(tiltRemaining/60)}:{(tiltRemaining%60).toString().padStart(2,'0')}</span>
+          </div>
+        )}
+      </div>
+
+      {/* Body */}
+      <div className="app-body">
+        {renderSidebar()}
+        <main className="main-content">
+          <div className="view-area">
+            {activeView === 'command_center' && renderCommandCenter()}
+            {activeView === 'community' && <CommunityLeaderboard />}
+            {activeView === 'coach_portal' && <CoachPortal />}
+            {activeView === 'upsolve_queue' && <UpsolveQueue cfHandle={cfHandle} />}
+            {activeView === 'crucible' && renderCrucible()}
+            {activeView === 'golden_path' && renderGoldenPath()}
+            {activeView === 'graveyard' && renderGraveyard()}
+            {activeView === 'code_explorer' && renderCodeExplorer()}
+            {activeView === 'palantir_hub' && renderPalantirHub()}
+            {activeView === 'topic_explorer' && renderTopicExplorer()}
+            {activeView === 'training_hub' && renderTrainingHub()}
+            {activeView === 'complexity_analyzer' && renderComplexityAnalyzer()}
+            {activeView === 'memory_profiler' && renderMemoryProfiler()}
+            {activeView === 'contest_simulator' && renderContestSimulator()}
+            {activeView === 'telemetry' && renderTelemetry()}
+            {activeView === 'drawdown' && renderDrawdown()}
+            {activeView === 'skill_tree' && renderSkillTree()}
+            {activeView === 'settings' && renderSettings()}
+            {activeView === 'dna_dashboard' && <DNADashboard cfHandle={cfHandle} />}
+            {activeView === 'ai_coach_chat' && renderAICoachChat()}
+            {activeView === 'peer_compare' && renderPeerCompare()}
+            {activeView === 'contest_postmortem' && renderContestPostmortem()}
+            {activeView === 'achievements' && renderAchievements()}
+            {activeView === 'performance_arc' && renderPerformanceArc()}
+            {activeView === 'mentor_view' && renderMentorView()}
+          </div>
+        </main>
+      </div>
+
+      {/* Code Modal */}
       {codeModal.isOpen && (
-        <div style={{
-          position: 'fixed', top: 0, left: 0, right: 0, bottom: 0,
-          background: 'rgba(0,0,0,0.6)', backdropFilter: 'blur(8px)',
-          display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 100
-        }}>
-          <div className="glass-panel-outer" style={{ width: '800px', maxWidth: '90vw', maxHeight: '90vh', display: 'flex', flexDirection: 'column', padding: '0' }}>
-             <div style={{ padding: '16px 24px', borderBottom: '1px solid var(--border-quant-harsh)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                <span className="text-mono text-primary">{codeModal.handle}'s Solution</span>
-                <button onClick={() => setCodeModal({ isOpen: false, code: '', handle: '' })} style={{ background: 'none', border: 'none', color: 'var(--text-muted)', cursor: 'pointer', fontSize: '20px' }}>×</button>
-             </div>
-             <div style={{ padding: '24px', overflowY: 'auto', background: 'rgba(5,5,5,0.8)' }}>
-               <pre className="text-mono text-sm" style={{ color: 'var(--accent-green-muted)', margin: 0, whiteSpace: 'pre-wrap' }}>
-                 <code>{codeModal.code}</code>
-               </pre>
-               {codeModal.url && (
-                 <div style={{ marginTop: '24px', paddingTop: '16px', borderTop: '1px solid rgba(255,255,255,0.1)' }}>
-                   <a href={codeModal.url} target="_blank" rel="noreferrer" style={{ color: 'var(--accent-cyan)', textDecoration: 'none' }} className="text-mono text-sm">
-                     â–¶ OPEN SUBMISSION DIRECTLY ON CODEFORCES
-                   </a>
-                 </div>
-               )}
-             </div>
+        <div style={{ position: 'fixed', inset: 0, background: 'rgba(13,29,62,0.6)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000 }}>
+          <div style={{ width: '820px', maxWidth: '95vw', maxHeight: '90vh', background: 'var(--bg-card)', border: '1px solid var(--border)', borderTop: '3px solid var(--icpc-blue)', borderRadius: 'var(--radius-md)', display: 'flex', flexDirection: 'column', boxShadow: '0 8px 32px rgba(0,0,0,0.2)' }}>
+            <div style={{ padding: '14px 20px', borderBottom: '1px solid var(--border)', display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: '#F0F4FA' }}>
+              <div>
+                <span className="text-mono" style={{ fontWeight: 700, color: 'var(--text-dark)' }}>{codeModal.handle}</span>
+                <span style={{ fontSize: '12px', color: 'var(--text-muted)', marginLeft: '8px' }}>Solution</span>
+              </div>
+              <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
+                <button className="btn btn-ghost btn-sm" onClick={() => navigator.clipboard.writeText(codeModal.code)}>Copy</button>
+                {codeModal.url && <a href={codeModal.url} target="_blank" rel="noreferrer" className="btn btn-primary btn-sm">Open on CF</a>}
+                <button onClick={() => setCodeModal({ isOpen: false, code: '', handle: '' })} style={{ background: 'none', border: 'none', color: 'var(--text-muted)', cursor: 'pointer', fontSize: '20px', lineHeight: 1, padding: '0 4px' }}>×</button>
+              </div>
+            </div>
+            <div style={{ padding: '20px', overflowY: 'auto', flexGrow: 1 }}>
+              <div className="code-block" style={{ color: 'var(--text-body)', whiteSpace: 'pre-wrap', margin: 0 }}>
+                <code>{codeModal.code}</code>
+              </div>
+            </div>
           </div>
         </div>
       )}
@@ -2595,3 +3896,9 @@ h1{color:#00d4aa;border-bottom:1px solid #333;padding-bottom:16px}h2{color:#888;
 }
 
 export default App
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// INJECTED NEW SECTION FUNCTIONS
+// These are hoisted-style function declarations to keep App.jsx clean.
+// They are injected via module augmentation in dev.
+// ═══════════════════════════════════════════════════════════════════════════════

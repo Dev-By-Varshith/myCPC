@@ -1,0 +1,286 @@
+{
+  "name": "mycpc",
+  "displayName": "myCPC — CP Environment & DNA Coach",
+  "description": "A complete competitive programming environment: problem fetching, multi-language judge, stress testing, CF auto-submit, and an AI coach that builds your Coder DNA profile.",
+  "version": "3.0.0",
+  "publisher": "mycpc",
+  "engines": {
+    "vscode": "^1.74.0"
+  },
+  "categories": [
+    "Other"
+  ],
+  "activationEvents": [
+    "onStartupFinished"
+  ],
+  "main": "./dist/extension.js",
+  "contributes": {
+    "viewsContainers": {
+      "activitybar": [
+        {
+          "id": "mycpc-sidebar",
+          "title": "myCPC",
+          "icon": "$(zap)"
+        }
+      ]
+    },
+    "views": {
+      "mycpc-sidebar": [
+        {
+          "type": "webview",
+          "id": "mycpc.testView",
+          "name": "Test Cases",
+          "icon": "$(beaker)"
+        },
+        {
+          "type": "webview",
+          "id": "mycpc.problemView",
+          "name": "Problem",
+          "icon": "$(book)"
+        },
+        {
+          "type": "webview",
+          "id": "mycpc.dnaView",
+          "name": "DNA Live",
+          "icon": "$(pulse)"
+        },
+        {
+          "type": "webview",
+          "id": "mycpc.historyView",
+          "name": "History",
+          "icon": "$(history)"
+        }
+      ]
+    },
+    "commands": [
+      {
+        "command": "mycpc.runTests",
+        "title": "myCPC: Run All Tests",
+        "icon": "$(play)"
+      },
+      {
+        "command": "mycpc.runSingleTest",
+        "title": "myCPC: Run Single Test",
+        "icon": "$(debug-start)"
+      },
+      {
+        "command": "mycpc.stopSession",
+        "title": "myCPC: Stop Session & Reset",
+        "icon": "$(stop)"
+      },
+      {
+        "command": "mycpc.analyzeSession",
+        "title": "myCPC: Analyze Session (DNA)",
+        "icon": "$(search-fuzzy)"
+      },
+      {
+        "command": "mycpc.openReport",
+        "title": "myCPC: Open Last DNA Report",
+        "icon": "$(graph)"
+      },
+      {
+        "command": "mycpc.addTestCase",
+        "title": "myCPC: Add Custom Test Case",
+        "icon": "$(add)"
+      },
+      {
+        "command": "mycpc.deleteTestCase",
+        "title": "myCPC: Delete Test Case",
+        "icon": "$(trash)"
+      },
+      {
+        "command": "mycpc.stressTest",
+        "title": "myCPC: Run Stress Test",
+        "icon": "$(flame)"
+      },
+      {
+        "command": "mycpc.submitCF",
+        "title": "myCPC: Submit to Codeforces",
+        "icon": "$(cloud-upload)"
+      },
+      {
+        "command": "mycpc.setLanguage",
+        "title": "myCPC: Change Language",
+        "icon": "$(symbol-keyword)"
+      },
+      {
+        "command": "mycpc.openSettings",
+        "title": "myCPC: Open Settings",
+        "icon": "$(settings-gear)"
+      },
+      {
+        "command": "mycpc.openDashboard",
+        "title": "myCPC: Open Web DNA Dashboard",
+        "icon": "$(link-external)"
+      },
+      {
+        "command": "mycpc.openProblem",
+        "title": "myCPC: Focus Problem Panel",
+        "icon": "$(book)"
+      },
+      {
+        "command": "mycpc.openHistory",
+        "title": "myCPC: Focus History Panel",
+        "icon": "$(history)"
+      },
+      {
+        "command": "mycpc.openDNA",
+        "title": "myCPC: Focus DNA Live Panel",
+        "icon": "$(pulse)"
+      },
+      {
+        "command": "mycpc.openBruteFile",
+        "title": "myCPC: Set Brute Force File",
+        "icon": "$(file-code)"
+      },
+      {
+        "command": "mycpc.generateTests",
+        "title": "myCPC: Generate Stress Test Cases",
+        "icon": "$(beaker)"
+      },
+      {
+        "command": "mycpc.importFromUrl",
+        "title": "myCPC: Import Tests from URL",
+        "icon": "$(cloud-download)"
+      },
+      {
+        "command": "mycpc.viewProblemStatement",
+        "title": "myCPC: View Problem Statement",
+        "icon": "$(preview)"
+      }
+    ],
+    "keybindings": [
+      {
+        "command": "mycpc.runTests",
+        "key": "ctrl+alt+r",
+        "mac": "cmd+alt+r"
+      },
+      {
+        "command": "mycpc.stopSession",
+        "key": "ctrl+alt+s",
+        "mac": "cmd+alt+s"
+      },
+      {
+        "command": "mycpc.analyzeSession",
+        "key": "ctrl+alt+a",
+        "mac": "cmd+alt+a"
+      },
+      {
+        "command": "mycpc.submitCF",
+        "key": "ctrl+alt+u",
+        "mac": "cmd+alt+u"
+      },
+      {
+        "command": "mycpc.addTestCase",
+        "key": "ctrl+alt+n",
+        "mac": "cmd+alt+n"
+      },
+      {
+        "command": "mycpc.stressTest",
+        "key": "ctrl+alt+t",
+        "mac": "cmd+alt+t"
+      },
+      {
+        "command": "mycpc.viewProblemStatement",
+        "key": "ctrl+alt+p",
+        "mac": "cmd+alt+p"
+      },
+      {
+        "command": "mycpc.importFromUrl",
+        "key": "ctrl+alt+i",
+        "mac": "cmd+alt+i"
+      }
+    ],
+    "configuration": {
+      "title": "myCPC — CP Environment & DNA Coach",
+      "properties": {
+        "mycpc.cfHandle": {
+          "type": "string",
+          "default": "",
+          "markdownDescription": "Your **Codeforces handle** (e.g. `tourist`). Required for DNA profile and verdict polling."
+        },
+        "mycpc.cfJsessionid": {
+          "type": "string",
+          "default": "",
+          "markdownDescription": "Your CF **JSESSIONID** cookie value (from browser DevTools → Application → Cookies on codeforces.com). Used for auto-submit. _Treat like a password._"
+        },
+        "mycpc.cfCsrfToken": {
+          "type": "string",
+          "default": "",
+          "markdownDescription": "Your CF **X-Csrf-Token** (from browser DevTools → Network → any CF request header, or from the `Codeforces` hidden input on the submit form). Needed for auto-submit."
+        },
+        "mycpc.language": {
+          "type": "string",
+          "default": "cpp",
+          "enum": [
+            "cpp",
+            "python",
+            "java",
+            "rust"
+          ],
+          "enumDescriptions": [
+            "C++17 (g++ -O2 -std=c++17)",
+            "Python 3 (python3)",
+            "Java (javac + java)",
+            "Rust (rustc)"
+          ],
+          "description": "Default language for new problems. Auto-detected from file extension when possible."
+        },
+        "mycpc.cppCompileFlags": {
+          "type": "string",
+          "default": "-O2 -std=c++17 -Wall",
+          "description": "Additional flags passed to g++ when compiling C++ solutions."
+        },
+        "mycpc.geminiApiKey": {
+          "type": "string",
+          "default": "",
+          "markdownDescription": "Your personal **Google Gemini API key** (free at [aistudio.google.com](https://aistudio.google.com)). Leave blank to use the platform pool (10 free DNA analyses/month)."
+        },
+        "mycpc.backendUrl": {
+          "type": "string",
+          "default": "http://localhost:3002",
+          "description": "URL of the myCPC backend. Change this if running the backend remotely."
+        },
+        "mycpc.autoAnalyzeOnAC": {
+          "type": "boolean",
+          "default": true,
+          "description": "Auto-generate DNA report when all tests pass. Set false to trigger manually with Ctrl+Alt+A."
+        },
+        "mycpc.stressTestCount": {
+          "type": "number",
+          "default": 100,
+          "minimum": 1,
+          "maximum": 10000,
+          "description": "Number of random test cases to generate during a stress test run."
+        },
+        "mycpc.templatePath": {
+          "type": "string",
+          "default": "",
+          "description": "Absolute path to a .cpp template file. If set, new problem files are initialized from this template."
+        },
+        "mycpc.snapshotIntervalSeconds": {
+          "type": "number",
+          "default": 30,
+          "minimum": 10,
+          "description": "Interval (seconds) for taking full code snapshots during a session."
+        }
+      }
+    }
+  },
+  "scripts": {
+    "vscode:prepublish": "npm run compile",
+    "compile": "tsc -p ./",
+    "watch": "tsc -watch -p ./",
+    "lint": "eslint src --ext ts"
+  },
+  "devDependencies": {
+    "@types/express": "^4.17.15",
+    "@types/node": "^18.11.18",
+    "@types/vscode": "^1.74.0",
+    "typescript": "^4.9.4"
+  },
+  "dependencies": {
+    "dotenv": "^17.4.2",
+    "express": "^4.18.2"
+  }
+}
